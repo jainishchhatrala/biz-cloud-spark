@@ -411,8 +411,11 @@ export const api = {
       }
       return [...v].sort();
     };
+    let vm = [];
+    try { const { data } = await supabase.from("vendors").select("name").eq("active", true); vm = (data || []).map(x => (x.name || "").trim()).filter(Boolean); } catch {}
+    const vendorNames = [...new Set([...vm, ...collect("vendor")])].sort((a, b) => a.localeCompare(b));
     const ps = collect("process"), pst = collect("process_stage");
-    return { vendors: collect("vendor"), items: collect("item"), work_types: collect("work_type"),
+    return { vendors: vendorNames, items: collect("item"), work_types: collect("work_type"),
       processes: ps.length ? ps : ["Hardening", "Nitriding", "Blackodising", "Plating", "Grinding", "Polishing"],
       process_stages: pst.length ? pst : ["Cutting", "Grinding", "Hardening", "Plating", "Polishing", "QC", "Final"] };
   },
