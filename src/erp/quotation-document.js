@@ -28,6 +28,9 @@ export function sanitizeTerms(html) {
 export function buildQuotationBody(q, company, totals, formatMoney, formatDate) {
   const e = escapeHtml;
   const closing = splitCompanyClosing(company.terms_html || "");
+  const termsDoc = new DOMParser().parseFromString(sanitizeTerms(closing.termsHtml), "text/html");
+  const firstTerm = termsDoc.body.firstElementChild;
+  if (/^terms\s*(?:&|and)\s*conditions\s*$/i.test(firstTerm?.textContent?.trim() || "")) firstTerm.remove();
   const logo = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(company.logo_data || "") || /^https:\/\//i.test(company.logo_data || "")
     ? `<img class="company-logo" src="${e(company.logo_data)}" alt="${e(company.company_name)} logo" />`
     : `<div class="brand-mark">${e((company.company_name || "C")[0])}</div>`;
@@ -43,7 +46,7 @@ export function buildQuotationBody(q, company, totals, formatMoney, formatDate) 
       <div class="totals"><div class="total-line"><span>Subtotal</span><strong>${e(formatMoney(totals.sub))}</strong></div>${totals.disc > 0 ? `<div class="total-line"><span>Discount</span><strong>− ${e(formatMoney(totals.disc))}</strong></div><div class="total-line"><span>Taxable amount</span><strong>${e(formatMoney(totals.taxable))}</strong></div>` : ""}<div class="total-line"><span>GST</span><strong>${e(formatMoney(totals.gst))}</strong></div><div class="total-line grand-total"><span>Grand total</span><strong>${e(formatMoney(totals.total))}</strong></div></div>
       ${q.notes ? `<div class="quote-notes"><strong>Quotation notes</strong><div>${e(q.notes)}</div></div>` : ""}
     </div></section>
-    <section class="sheet" data-page-kind="closing"><div class="sheet-content closing-content"><div class="continuation-head"><strong>${e(company.company_name || "Company")}</strong><span>${e(q.number)} · ${e(q.client_name)}</span></div><h2>Terms &amp; Conditions</h2><div class="terms-source">${sanitizeTerms(closing.termsHtml) || "<p>No terms specified.</p>"}</div><div class="closing-bottom"><section class="bank-details"><h2>Bank details</h2><p>${e(closing.bankDetails || "Not provided")}</p></section><div class="signature-grid"><div><div class="signature-name">For ${e(company.company_name || "Company")}</div><div class="signature-line">Authorised Signatory</div></div><div><div class="signature-name">For ${e(q.client_name || "Client")}</div><div class="signature-line">Client Acceptance</div></div></div></div></div></section>
+    <section class="sheet" data-page-kind="closing"><div class="sheet-content closing-content"><div class="continuation-head"><strong>${e(company.company_name || "Company")}</strong><span>${e(q.number)} · ${e(q.client_name)}</span></div><h2>Terms &amp; Conditions</h2><div class="terms-source">${termsDoc.body.innerHTML || "<p>No terms specified.</p>"}</div><div class="closing-bottom"><section class="bank-details"><h2>Bank details</h2><p>${e(closing.bankDetails || "Not provided")}</p></section><div class="signature-grid"><div><div class="signature-name">For ${e(company.company_name || "Company")}</div><div class="signature-line">Authorised Signatory</div></div><div><div class="signature-name">For ${e(q.client_name || "Client")}</div><div class="signature-line">Client Acceptance</div></div></div></div></div></section>
     </main>`;
 }
 
@@ -79,9 +82,8 @@ export function paginateQuotation(doc, q, company) {
   };
   for (const group of groups) {
     table.append(group);
-    if (!fits(content)) {
+    if (!fits(content) && table.querySelectorAll("tbody").length > 1) {
       group.remove();
-      if (!table.querySelector("tbody")) table.remove();
       nextItemsPage(); table.append(group);
     }
     // An exceptionally long specification cannot fit on one sheet. Split only that description,

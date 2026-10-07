@@ -1,0 +1,10 @@
+type QuotationItem = { name: string; description?: string; quantity: number; unit_price: number };
+type Quotation = { number: string; client_name?: string; items?: QuotationItem[]; notes?: string; template_name?: string; order_date?: string; valid_until?: string };
+type Company = { company_name?: string; tagline?: string; address?: string; phone?: string; email?: string; gstin?: string; website?: string; logo_data?: string; terms_html?: string };
+type Totals = { sub: number; disc: number; taxable: number; gst: number; total: number };
+export function escapeHtml(value: unknown): string;
+export function splitCompanyClosing(html?: string): { termsHtml: string; bankDetails: string };
+export function combineCompanyClosing(termsHtml: string, bankDetails: string): string;
+export function sanitizeTerms(html: string): string;
+export function buildQuotationBody(q: Quotation, company: Company, totals: Totals, formatMoney: (value: number) => string, formatDate: (value: string | undefined) => string): string;
+export function paginateQuotation(doc: Document, q: Quotation, company: Company): void;
