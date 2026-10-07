@@ -1529,7 +1529,7 @@ function InventoryPage({ user, items, txns, reload }) {
       <div className="module-summary">
         <div className="summary-icon"><Package size={19} /></div>
         <div><strong>{items.length}</strong><span>total items</span></div>
-        <div className="summary-stat clickable" role="button" tabIndex={0}
+        <div className={`summary-stat clickable ${lowOnly ? "on" : ""}`} role="button" tabIndex={0}
           title={lowOnly ? "Show all items" : "Show only low stock items"}
           data-testid="inv-low-stock-toggle"
           onClick={() => { setLowOnly(v => !v); setTab("items"); }}
