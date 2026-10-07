@@ -694,49 +694,100 @@ export type Database = {
         }
         Relationships: []
       }
+      quotation_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount: number
+          id: string
+          items: Json
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quotations: {
         Row: {
+          change_notes: string | null
           client_id: string
           client_name: string | null
           created_at: string
           created_by: string | null
           dealer_id: string | null
+          discount: number
           id: string
           items: Json
           notes: string | null
           number: string
           order_date: string | null
+          shared_at: string | null
           status: string
+          template_id: string | null
+          template_name: string | null
           updated_at: string
           valid_until: string | null
         }
         Insert: {
+          change_notes?: string | null
           client_id: string
           client_name?: string | null
           created_at?: string
           created_by?: string | null
           dealer_id?: string | null
+          discount?: number
           id?: string
           items?: Json
           notes?: string | null
           number: string
           order_date?: string | null
+          shared_at?: string | null
           status?: string
+          template_id?: string | null
+          template_name?: string | null
           updated_at?: string
           valid_until?: string | null
         }
         Update: {
+          change_notes?: string | null
           client_id?: string
           client_name?: string | null
           created_at?: string
           created_by?: string | null
           dealer_id?: string | null
+          discount?: number
           id?: string
           items?: Json
           notes?: string | null
           number?: string
           order_date?: string | null
+          shared_at?: string | null
           status?: string
+          template_id?: string | null
+          template_name?: string | null
           updated_at?: string
           valid_until?: string | null
         }
@@ -746,6 +797,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_templates"
             referencedColumns: ["id"]
           },
         ]
