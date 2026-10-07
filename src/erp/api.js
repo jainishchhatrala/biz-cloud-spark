@@ -27,7 +27,8 @@ const nextNumber = (prefix) => run(supabase.rpc("next_doc_number", { _prefix: pr
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k] === "" && /_id$/.test(k) ? null : obj[k]]));
 
 const CLIENT_KEYS = ["company", "person", "phone", "email", "city", "state", "source", "status", "rating", "color", "notes", "dealer_id"];
-const QUOTE_KEYS = ["number", "client_id", "client_name", "order_date", "valid_until", "status", "items", "notes", "dealer_id"];
+const QUOTE_KEYS = ["number", "client_id", "client_name", "order_date", "valid_until", "status", "items", "notes", "dealer_id", "template_id", "template_name", "discount", "change_notes", "shared_at"];
+const QTPL_KEYS = ["name", "description", "items", "discount", "notes"];
 const ORDER_KEYS = ["number", "quotation_id", "client_id", "client_name", "order_date", "expected_delivery", "dispatch_date", "items", "status", "notes", "dealer_id"];
 const PRODUCT_KEYS = ["name", "model_code", "description", "unit", "default_price", "active"];
 const INV_KEYS = ["sku", "name", "category", "unit", "current_stock", "min_level", "supplier", "location"];
@@ -243,6 +244,11 @@ export const api = {
     return q;
   },
   deleteQuotation: (id) => del("quotations", id),
+  // default quotation templates
+  listQuotationTemplates: () => list("quotation_templates", "name", true),
+  createQuotationTemplate: async (b) => { const u = await currentUser(); return insert("quotation_templates", { ...pick(b, QTPL_KEYS), created_by: u.id }); },
+  updateQuotationTemplate: (id, b) => update("quotation_templates", id, pick(b, QTPL_KEYS)),
+  deleteQuotationTemplate: (id) => del("quotation_templates", id),
   convertQuotation: async (id) => {
     const u = await currentUser();
     const q = await one("quotations", id, "Quotation");
