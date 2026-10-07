@@ -951,8 +951,10 @@ function TemplateForm({ initial, products, onSave, onClose }) {
   );
 }
 
-async function printQuotation(q, company) {
-  try { await openQuotationPrint(q, company, qtTotals(q.items, q.discount), fmtMoney, fmtDate); }
+async function printQuotation(q, company, clients = []) {
+  const client = clients.find(c => c.id === q.client_id);
+  const enriched = client?.gstin ? { ...q, client_gstin: client.gstin } : q;
+  try { await openQuotationPrint(enriched, company, qtTotals(q.items, q.discount), fmtMoney, fmtDate); }
   catch (error) { toast.error(error?.message || "Could not generate quotation PDF"); }
 }
 
@@ -1100,7 +1102,7 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
                     <td><Badge>{q.status}</Badge></td>
                     <td className="row-actions">
                       <button className="icon-btn" onClick={() => share(q)} title="Share on WhatsApp" data-testid={`qt-share-${i}`}><MessageCircle size={15} /></button>
-                      <button className="icon-btn" onClick={() => printQuotation(q, company)} title="Preview PDF" data-testid={`qt-print-${i}`}><Printer size={15} /></button>
+                      <button className="icon-btn" onClick={() => printQuotation(q, company, clients)} title="Preview PDF" data-testid={`qt-print-${i}`}><Printer size={15} /></button>
                       <button className="icon-btn" onClick={() => { setEditing(q); setShow(true); }} data-testid={`qt-edit-${i}`}><Pencil size={15} /></button>
                       {q.status !== "Converted" && can(user, "orders") && <button className="icon-btn" title="Convert to order" onClick={() => convert(q)} data-testid={`qt-convert-${i}`}><ArrowUpRight size={15} /></button>}
                       {user.role === "Admin" && <button className="icon-btn danger" onClick={() => del(q)} data-testid={`qt-delete-${i}`}><Trash2 size={15} /></button>}
