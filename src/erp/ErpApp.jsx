@@ -1157,6 +1157,7 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
                     <td><strong>{fmtMoney(total)}</strong></td>
                     <td><Badge>{q.status}</Badge></td>
                     <td className="row-actions">
+                      <button className="icon-btn" onClick={() => share(q)} title="Share on WhatsApp" data-testid={`qt-share-${i}`}><MessageCircle size={15} /></button>
                       <button className="icon-btn" onClick={() => printQuotation(q, company)} title="Preview PDF" data-testid={`qt-print-${i}`}><Printer size={15} /></button>
                       <button className="icon-btn" onClick={() => { setEditing(q); setShow(true); }} data-testid={`qt-edit-${i}`}><Pencil size={15} /></button>
                       {q.status !== "Converted" && can(user, "orders") && <button className="icon-btn" title="Convert to order" onClick={() => convert(q)} data-testid={`qt-convert-${i}`}><ArrowUpRight size={15} /></button>}
