@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Quotation documents
+- Keep quotation document rendering and measured A4 pagination in dedicated browser-only ERP modules; this isolates print layout from workspace styling and business totals.
+- Store bank details as a marked block within the existing company terms field and expose a separate editor; this preserves current permissions and persistence without a schema change.
