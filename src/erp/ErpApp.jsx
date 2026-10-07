@@ -2134,7 +2134,7 @@ function TeamPage({ user, users, reload }) {
 /* ========================= Products ========================= */
 /* ========================= Vendors ========================= */
 const VENDOR_BLANK = { name: "", vendor_type: "Job Work", contact_person: "", phone: "", whatsapp: "", email: "", city: "", address: "", services: "", notes: "", active: true };
-const Stars = ({ value }) => value == null ? <span className="muted-cell">No data yet</span> : (
+const VendorStars = ({ value }) => value == null ? <span className="muted-cell">No data yet</span> : (
   <span title={`${value} / 5`} style={{ whiteSpace: "nowrap" }}>
     {[1, 2, 3, 4, 5].map(n => <span key={n} style={{ color: n <= Math.round(value) ? "var(--orange, #f59e0b)" : "var(--line, #d1d5db)" }}>★</span>)}
     <small style={{ marginLeft: 6 }}>{value.toFixed(1)}</small>
