@@ -1115,6 +1115,7 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
         eyebrow={editing ? "EDIT QUOTATION" : "CREATE QUOTATION"}>
         <QuotationForm key={editing?.id || "new"} initial={editing} clients={clients} products={products} templates={templates}
           defaultClientId={initialClientId}
+          onClientAdded={async () => { await reload(); }}
           onSave={save} onClose={() => { setShow(false); setEditing(null); }} />
       </Modal>
     </div>
