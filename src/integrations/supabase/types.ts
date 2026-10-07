@@ -800,6 +800,111 @@ export type Database = {
           },
         ]
       }
+      vendor_logs: {
+        Row: {
+          by_user: string | null
+          created_at: string
+          delay_reason: string | null
+          id: string
+          job_work_id: string | null
+          log_type: string
+          next_followup_at: string | null
+          note: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          by_user?: string | null
+          created_at?: string
+          delay_reason?: string | null
+          id?: string
+          job_work_id?: string | null
+          log_type?: string
+          next_followup_at?: string | null
+          note: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          by_user?: string | null
+          created_at?: string
+          delay_reason?: string | null
+          id?: string
+          job_work_id?: string | null
+          log_type?: string
+          next_followup_at?: string | null
+          note?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_logs_job_work_id_fkey"
+            columns: ["job_work_id"]
+            isOneToOne: false
+            referencedRelation: "job_work"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          active: boolean
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          services: string | null
+          updated_at: string
+          vendor_type: string
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          services?: string | null
+          updated_at?: string
+          vendor_type?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          services?: string | null
+          updated_at?: string
+          vendor_type?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
