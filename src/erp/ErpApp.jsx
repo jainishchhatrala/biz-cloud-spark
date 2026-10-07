@@ -2209,7 +2209,7 @@ function VendorsPage({ user, company }) {
                 <tr key={v.name} data-testid={`vendor-row-${i}`} style={{ cursor: "pointer" }} onClick={() => openVendor(v)}>
                   <td><strong>{v.name}</strong>{!v.registered && <> <Badge tone="gray">From job work</Badge></>}<br /><span className="table-sub">{v.city || v.services || ""}</span></td>
                   <td>{v.vendor_type}</td>
-                  <td><Stars value={v.rating} /></td>
+                  <td><VendorStars value={v.rating} /></td>
                   <td>{v.on_time_pct == null ? "—" : `${Math.round(v.on_time_pct)}% (${v.on_time}/${v.completed + v.open_delayed.length})`}</td>
                   <td>{v.received_qty + v.rejected_qty > 0 ? `${v.rejection_pct.toFixed(1)}% (${v.rejected_qty})` : "—"}</td>
                   <td>{v.open_delayed.length ? <Badge tone="red">{v.open_delayed.length} late</Badge> : <Badge tone="green">OK</Badge>}</td>
@@ -2252,7 +2252,7 @@ function VendorsPage({ user, company }) {
       <Modal show={!!sel} onClose={() => setSel(null)} title={sel?.name || ""} eyebrow="VENDOR PERFORMANCE & FOLLOW-UP" wide>
         {sel && <div className="form-grid">
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
-            <Stars value={sel.rating} />
+            <VendorStars value={sel.rating} />
             <span>Jobs: <strong>{sel.total_jobs}</strong></span>
             <span>On time: <strong>{sel.on_time}</strong></span>
             <span>Delayed: <strong>{sel.delayed}</strong></span>
