@@ -1547,14 +1547,23 @@ function InventoryPage({ user, items, txns, reload }) {
           Stock movements <span>{(txns || []).length}</span>
         </button>
       </div>
-      {tab === "items" && (
-      <section className="panel table-panel">
-        <div className="table-scroll">
+      {tab === "items" && (() => {
+        const shown = lowOnly ? items.filter(i => i.current_stock < i.min_level) : items;
+        return (
+        <section className="panel table-panel">
+          {lowOnly && (
+            <div className="table-toolbar" data-testid="inv-lowstock-banner">
+              <button className={`filter-btn attention-filter on`} style={{ background: "#ffebeb", color: "#d33a36", borderColor: "#f6c0bd" }}
+                onClick={() => setLowOnly(false)} data-testid="inv-lowstock-clear">
+                Low stock only ({shown.length}) ✕</button>
+            </div>
+          )}
+          <div className="table-scroll">
           <table>
             <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Location</th><th>Stock</th><th>Min level</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {items.length === 0 && <tr><td colSpan="8"><Empty msg="No inventory items" /></td></tr>}
-              {items.map((it, i) => (
+              {shown.length === 0 && <tr><td colSpan="8"><Empty msg={lowOnly ? "No low stock items" : "No inventory items"} /></td></tr>}
+              {shown.map((it, i) => (
                 <tr key={it.id} data-testid={`inventory-row-${i}`}>
                   <td><strong className="mono">{it.sku}</strong></td>
                   <td><strong>{it.name}</strong></td>
