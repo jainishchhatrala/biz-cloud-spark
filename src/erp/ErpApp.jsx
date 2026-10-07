@@ -1583,7 +1583,8 @@ function InventoryPage({ user, items, txns, reload }) {
           </table>
         </div>
       </section>
-      )}
+        );
+      })()}
       {tab === "movements" && (() => {
         const filtered = (txns || []).filter(t =>
           (!txnFilter || t.txn_type === txnFilter)
