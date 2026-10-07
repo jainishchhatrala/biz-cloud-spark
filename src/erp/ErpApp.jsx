@@ -2318,7 +2318,7 @@ const vendorMsg = (v, company) => {
 const waLink = (v, company) => {
   let d = String(v.whatsapp || v.phone || "").replace(/\D/g, "");
   if (d.length === 10) d = "91" + d;
-  return `https://api.whatsapp.com/send?phone=${d}?text=${encodeURIComponent(vendorMsg(v, company))}`;
+  return `https://api.whatsapp.com/send?phone=${d}&text=${encodeURIComponent(vendorMsg(v, company))}`;
 };
 const mailLink = (v, company) => `mailto:${v.email || ""}?subject=${encodeURIComponent("Status update required – pending job work")}&body=${encodeURIComponent(vendorMsg(v, company))}`;
 
