@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           dealer_id: string | null
           email: string | null
+          gstin: string | null
           id: string
           notes: string | null
           owner_id: string | null
@@ -40,6 +41,7 @@ export type Database = {
           created_at?: string
           dealer_id?: string | null
           email?: string | null
+          gstin?: string | null
           id?: string
           notes?: string | null
           owner_id?: string | null
@@ -58,6 +60,7 @@ export type Database = {
           created_at?: string
           dealer_id?: string | null
           email?: string | null
+          gstin?: string | null
           id?: string
           notes?: string | null
           owner_id?: string | null

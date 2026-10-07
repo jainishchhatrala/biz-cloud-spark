@@ -26,7 +26,7 @@ const del = async (table, id) => { await run(supabase.from(table).delete().eq("i
 const nextNumber = (prefix) => run(supabase.rpc("next_doc_number", { _prefix: prefix }));
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k] === "" && /_id$/.test(k) ? null : obj[k]]));
 
-const CLIENT_KEYS = ["company", "person", "phone", "email", "city", "state", "source", "status", "rating", "color", "notes", "dealer_id"];
+const CLIENT_KEYS = ["company", "person", "phone", "email", "city", "state", "source", "status", "rating", "color", "notes", "dealer_id", "gstin"];
 const QUOTE_KEYS = ["number", "client_id", "client_name", "order_date", "valid_until", "status", "items", "notes", "dealer_id", "template_id", "template_name", "discount", "change_notes", "shared_at"];
 const QTPL_KEYS = ["name", "description", "items", "discount", "notes"];
 const ORDER_KEYS = ["number", "quotation_id", "client_id", "client_name", "order_date", "expected_delivery", "dispatch_date", "items", "status", "notes", "dealer_id"];

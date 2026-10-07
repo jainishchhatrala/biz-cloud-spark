@@ -442,6 +442,8 @@ function ClientForm({ initial, dealers, onSave, onClose }) {
         <div><label className="field-label">State</label><div className="input-wrap"><Building2 size={17} />
           <input value={f.state} onChange={e => set("state", e.target.value)} data-testid="client-form-state" /></div></div>
       </div>
+      <div><label className="field-label">GST number (GSTIN)</label><div className="input-wrap"><FileText size={17} />
+        <input value={f.gstin || ""} onChange={e => set("gstin", e.target.value)} placeholder="e.g. 24ABCDE1234F1Z5" data-testid="client-form-gstin" /></div></div>
       <div className="form-row-3">
         <div><label className="field-label">Inquiry source</label>
           <select value={f.source} onChange={e => set("source", e.target.value)} data-testid="client-form-source">
@@ -627,6 +629,7 @@ function ClientDetail({ client, onBack, setPage, reload }) {
       <div className="profile-strip">
         <div><small>Phone</small><strong>{client.phone}</strong></div>
         <div><small>Email</small><strong>{client.email || "—"}</strong></div>
+        <div><small>GSTIN</small><strong>{client.gstin || "—"}</strong></div>
         <div><small>Interest</small><Badge>{client.status}</Badge></div>
         <div><small>Rating</small><Stars value={client.rating} /></div>
         <div><small>Source</small><strong>{client.source}</strong></div>
