@@ -818,7 +818,7 @@ function QtTotalsBox({ items, discount }) {
   );
 }
 
-function QuotationForm({ initial, clients, products, templates = [], defaultClientId, onSave, onClose }) {
+function QuotationForm({ initial, clients, products, templates = [], defaultClientId, onSave, onClose, onClientAdded }) {
   const [f, setF] = useState({
     client_id: initial?.client_id || defaultClientId || (clients[0]?.id || ""),
     valid_until: initial?.valid_until || "",
@@ -833,6 +833,16 @@ function QuotationForm({ initial, clients, products, templates = [], defaultClie
   });
   const linkedOrder = initial?.synced_order_number;
   const [busy, setBusy] = useState(false);
+  const [showClient, setShowClient] = useState(false);
+  const saveNewClient = async (data) => {
+    try {
+      const created = await api.createClient(data);
+      toast.success("Client added");
+      await onClientAdded?.(created);
+      if (created?.id) setF(s => ({ ...s, client_id: created.id }));
+      setShowClient(false);
+    } catch (e) { toast.error(e?.response?.data?.detail || "Client save failed"); throw e; }
+  };
   const applyTemplate = (tid) => {
     const t = templates.find(x => x.id === tid);
     if (!t) return;
