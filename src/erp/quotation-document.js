@@ -87,42 +87,41 @@ export function paginateQuotation(doc, q, company) {
     // An exceptionally long specification cannot fit on one sheet. Split only that description,
     // keeping ordinary item/description pairs together and explicitly identifying continuations.
     if (!fits(content)) {
-      const cell = group.querySelector(".description-row td[colspan]");
-      const remaining = cell?.textContent || "";
-      if (cell && remaining) {
-        let rest = remaining;
-        while (rest) {
-          cell.textContent = rest;
-          if (fits(content)) break;
-          let low = 0, high = rest.length;
-          while (low < high) { const mid = Math.ceil((low + high) / 2); cell.textContent = rest.slice(0, mid); if (fits(content)) low = mid; else high = mid - 1; }
-          if (!low) throw new Error("Item name or company details exceed a printable page. Shorten the text and try again.");
-          let cut = low; const space = rest.lastIndexOf(" ", low); if (space > low / 2) cut = space;
-          cell.textContent = rest.slice(0, cut); rest = rest.slice(cut).trimStart();
-          if (rest) {
-            nextItemsPage();
-            const continuation = doc.createElement("tbody"); continuation.className = "item-group";
-            continuation.innerHTML = `<tr><td></td><td colspan="4" class="item-name">${escapeHtml(group.querySelector(".item-name")?.textContent)} — specification continued</td></tr><tr class="description-row"><td></td><td colspan="4"></td></tr>`;
-            table.append(continuation);
-            // Continue into this new cell without duplicating quantities or amounts.
-            const newCell = continuation.querySelector(".description-row td[colspan]");
-            let pending = rest;
-            newCell.textContent = pending;
-            while (!fits(content)) {
-              let a = 0, b = pending.length;
-              while (a < b) { const mid = Math.ceil((a + b) / 2); newCell.textContent = pending.slice(0, mid); if (fits(content)) a = mid; else b = mid - 1; }
-              if (!a) throw new Error("Specification is too large to print.");
-              newCell.textContent = pending.slice(0, a); rest = pending.slice(a); break;
-            }
-            if (fits(content) && newCell.textContent === pending) rest = "";
-            else { nextItemsPage(); table.append(group.cloneNode(true)); group.remove(); break; }
-          }
+      let cell = group.querySelector(".description-row td[colspan]");
+      let rest = cell?.textContent || "";
+      while (cell && rest) {
+        cell.textContent = rest;
+        if (fits(content)) break;
+        let low = 0, high = rest.length;
+        while (low < high) { const mid = Math.ceil((low + high) / 2); cell.textContent = rest.slice(0, mid); if (fits(content)) low = mid; else high = mid - 1; }
+        if (!low) throw new Error("Item name or company details exceed a printable page. Shorten the text and try again.");
+        let cut = low; const space = rest.lastIndexOf(" ", low); if (space > low / 2) cut = space;
+        cell.textContent = rest.slice(0, cut); rest = rest.slice(cut).trimStart();
+        if (rest) {
+          nextItemsPage();
+          const continuation = doc.createElement("tbody"); continuation.className = "item-group";
+          continuation.innerHTML = `<tr><td></td><td colspan="4" class="item-name">${escapeHtml(group.querySelector(".item-name")?.textContent)} — specification continued</td></tr><tr class="description-row"><td></td><td colspan="4"></td></tr>`;
+          table.append(continuation); cell = continuation.querySelector(".description-row td[colspan]");
         }
       }
     }
   }
   if (totals) { content.append(totals); if (!fits(content)) { totals.remove(); nextItemsPage(); table.remove(); content.append(totals); } }
-  if (notes) { content.append(notes); if (!fits(content)) { notes.remove(); nextItemsPage(); table.remove(); content.append(notes); } }
+  if (notes) {
+    content.append(notes);
+    if (!fits(content)) { notes.remove(); nextItemsPage(); table.remove(); content.append(notes); }
+    let noteCell = notes.querySelector("div"), remaining = noteCell?.textContent || "";
+    while (noteCell && !fits(content)) {
+      let low = 0, high = remaining.length;
+      while (low < high) { const mid = Math.ceil((low + high) / 2); noteCell.textContent = remaining.slice(0, mid); if (fits(content)) low = mid; else high = mid - 1; }
+      if (!low) throw new Error("Quotation notes exceed the printable area.");
+      noteCell.textContent = remaining.slice(0, low); remaining = remaining.slice(low);
+      nextItemsPage(); table.remove();
+      const continuation = doc.createElement("div"); continuation.className = "quote-notes";
+      continuation.innerHTML = "<strong>Quotation notes continued</strong><div></div>";
+      content.append(continuation); noteCell = continuation.querySelector("div"); noteCell.textContent = remaining;
+    }
+  }
   let closingSheet = pages.querySelector('[data-page-kind="closing"]');
   let closingContent = closingSheet.querySelector(".sheet-content");
   const source = closingContent.querySelector(".terms-source");
