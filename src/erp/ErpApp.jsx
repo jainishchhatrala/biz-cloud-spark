@@ -10,6 +10,8 @@ import {
   Pilcrow, Save, UploadCloud,
 } from "lucide-react";
 import { api, fmtMoney, fmtDate, fmtDateTime, relTime, can, hidesFinance } from "./api";
+import { openQuotationPrint } from "./print-quotation";
+import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
 
 /* ========================= Config ========================= */
 const BRAND = { name: "Aalidhra", suffix: " Cashew", tagline: "CASHEW EXPORT ERP" };
@@ -929,91 +931,9 @@ function TemplateForm({ initial, products, onSave, onClose }) {
   );
 }
 
-function printQuotation(q, company) {
-  const t = qtTotals(q.items, q.discount);
-  const win = window.open("", "_blank");
-  if (!win) { toast.error("Popup blocked — allow popups for PDF"); return; }
-  const logoImg = company.logo_data ? `<img src="${company.logo_data}" style="height:80px;" />` : `<div class="brand-letter">${(company.company_name || "A")[0]}</div>`;
-  const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${q.number}</title>
-    <style>
-      *{box-sizing:border-box;}body{font-family:'Segoe UI',Arial,sans-serif;color:#0b1220;margin:0;padding:0;}
-      .page{page-break-after:always;padding:48px 56px;min-height:100vh;}
-      .cover{background:linear-gradient(135deg,#f6f8fb 0%,#ffffff 100%);border-bottom:4px solid #e85d1a;}
-      .brand-row{display:flex;align-items:center;gap:20px;margin-bottom:32px;}
-      .brand-letter{width:72px;height:72px;background:#0b1220;color:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;}
-      .co-name{font-size:28px;font-weight:800;margin:0;}
-      .co-sub{color:#5a6678;margin:4px 0 0;font-size:14px;}
-      .cover-hero{margin-top:48px;}
-      .cover-hero .eyebrow{color:#e85d1a;letter-spacing:3px;font-size:11px;font-weight:700;}
-      .cover-hero h1{font-size:48px;margin:12px 0;letter-spacing:-1px;}
-      .cover-hero .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px;}
-      .cover-hero .meta div{padding:16px;border:1px solid #e4e8f0;border-radius:10px;}
-      .cover-hero .meta small{color:#5a6678;text-transform:uppercase;font-size:10px;letter-spacing:1.5px;}
-      .cover-hero .meta strong{display:block;margin-top:6px;font-size:16px;}
-      .co-contact{margin-top:48px;color:#5a6678;font-size:13px;line-height:1.8;}
-      table{width:100%;border-collapse:collapse;margin-top:24px;}
-      th{background:#0b1220;color:#fff;padding:12px 10px;text-align:left;font-size:11px;letter-spacing:1px;}
-      td{padding:12px 10px;border-bottom:1px solid #e4e8f0;font-size:13px;}
-      .totals{margin-top:24px;float:right;width:360px;}
-      .totals div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e4e8f0;}
-      .totals .grand{border-top:2px solid #0b1220;border-bottom:0;font-size:18px;font-weight:800;color:#e85d1a;}
-      .terms{color:#2b3545;line-height:1.7;}
-      .terms h2{color:#e85d1a;letter-spacing:1px;font-size:14px;}
-      @media print {.no-print{display:none;}}
-    </style></head><body>
-    <div class="page cover">
-      <div class="brand-row">${logoImg}
-        <div><h2 class="co-name">${company.company_name || "Company"}</h2>
-          <p class="co-sub">${company.tagline || ""}</p></div></div>
-      <div class="cover-hero">
-        <p class="eyebrow">QUOTATION ${q.number}${q.template_name ? " · " + q.template_name : ""}</p>
-        <h1>For ${q.client_name || ""}</h1>
-        <div class="meta">
-          <div><small>Issued</small><strong>${fmtDate(q.order_date)}</strong></div>
-          <div><small>Valid until</small><strong>${fmtDate(q.valid_until)}</strong></div>
-          <div><small>Status</small><strong>${q.status}</strong></div>
-          <div><small>Grand total</small><strong>${fmtMoney(t.total)}</strong></div>
-        </div>
-      </div>
-      <div class="co-contact">
-        ${company.address ? company.address + "<br/>" : ""}
-        ${company.phone ? "Phone: " + company.phone + " · " : ""}${company.email || ""}<br/>
-        ${company.gstin ? "GSTIN: " + company.gstin : ""} ${company.website ? " · " + company.website : ""}
-      </div>
-    </div>
-    <div class="page">
-      <h2 style="margin-bottom:4px;">Quotation details</h2>
-      <p style="color:#5a6678;margin:0;">${q.number} · ${q.client_name || ""}</p>
-      <table><thead><tr><th>#</th><th>Item</th><th>Description</th><th>Rate</th><th>Qty</th><th>Amount</th></tr></thead>
-      <tbody>${q.items.map((it, i) => `<tr><td>${i + 1}</td><td><strong>${it.name}</strong></td><td>${it.description || ""}</td>
-        <td>${fmtMoney(it.unit_price)}</td><td>${it.quantity}</td>
-        <td><strong>${fmtMoney(it.quantity * it.unit_price)}</strong></td></tr>`).join("")}</tbody></table>
-      <div class="totals">
-        <div><span>Total</span><strong>${fmtMoney(t.sub)}</strong></div>
-        ${t.disc > 0 ? `<div><span>Discount</span><strong>− ${fmtMoney(t.disc)}</strong></div><div><span>Net total</span><strong>${fmtMoney(t.taxable)}</strong></div>` : ""}
-        <div><span>GST</span><strong>${fmtMoney(t.gst)}</strong></div>
-        <div class="grand"><span>Grand total</span><strong>${fmtMoney(t.total)}</strong></div>
-      </div>
-      <div style="clear:both;"></div>
-      ${q.notes ? `<div style="margin-top:40px;padding:16px;background:#f6f8fb;border-left:4px solid #e85d1a;"><strong>Notes:</strong><p>${q.notes}</p></div>` : ""}
-    </div>
-    <div class="page terms">
-      <h2>TERMS &amp; CONDITIONS</h2>
-      ${company.terms_html || "<p>Standard terms apply.</p>"}
-      <div style="margin-top:60px;display:flex;justify-content:space-between;">
-        <div><p style="color:#5a6678;">For ${company.company_name || "Company"}</p>
-          <div style="height:60px;"></div><p style="border-top:1px solid #0b1220;padding-top:4px;">Authorised Signatory</p></div>
-        <div><p style="color:#5a6678;">For ${q.client_name || "Client"}</p>
-          <div style="height:60px;"></div><p style="border-top:1px solid #0b1220;padding-top:4px;">Client Acceptance</p></div>
-      </div>
-    </div>
-    <div class="no-print" style="position:fixed;top:16px;right:16px;">
-      <button onclick="window.print()" style="padding:10px 16px;background:#e85d1a;color:#fff;border:0;border-radius:8px;cursor:pointer;">Print / Save PDF</button>
-    </div>
-    </body></html>`;
-  win.document.write(html);
-  win.document.close();
-  setTimeout(() => win.print(), 400);
+async function printQuotation(q, company) {
+  try { await openQuotationPrint(q, company, qtTotals(q.items, q.discount), fmtMoney, fmtDate); }
+  catch (error) { toast.error(error?.message || "Could not generate quotation PDF"); }
 }
 
 function TemplatesPanel({ user, templates, products, reloadTemplates }) {
@@ -2542,8 +2462,9 @@ function ProductsPage({ user, products, reload }) {
 /* ========================= Company Settings ========================= */
 function SettingsPage({ user, company, reload }) {
   const [f, setF] = useState(company);
+  const [closing, setClosing] = useState(() => splitCompanyClosing(company.terms_html || ""));
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setF(company); }, [company]);
+  useEffect(() => { setF(company); setClosing(splitCompanyClosing(company.terms_html || "")); }, [company]);
   const uploadLogo = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2553,7 +2474,7 @@ function SettingsPage({ user, company, reload }) {
   };
   const save = async () => {
     setBusy(true);
-    try { await api.updateCompany(f); toast.success("Company settings saved"); await reload(); }
+    try { await api.updateCompany({ ...f, terms_html: combineCompanyClosing(closing.termsHtml, closing.bankDetails) }); toast.success("Company settings saved"); await reload(); }
     catch { toast.error("Save failed"); } finally { setBusy(false); }
   };
   return (
@@ -2600,11 +2521,15 @@ function SettingsPage({ user, company, reload }) {
         <section className="panel">
           <div className="panel-head"><div><p className="eyebrow">LEGAL</p><h3>Terms &amp; Conditions</h3></div>
             <span className="muted-cell">Shown on last page of quotation PDF</span></div>
-          <RichText value={f.terms_html || ""} onChange={v => setF({ ...f, terms_html: v })} />
+          <RichText value={closing.termsHtml} onChange={v => setClosing({ ...closing, termsHtml: v })} />
           <div className="preview-section">
             <small>LIVE PREVIEW</small>
-            <div className="terms-preview" dangerouslySetInnerHTML={{ __html: f.terms_html || "" }} />
+            <div className="terms-preview" dangerouslySetInnerHTML={{ __html: closing.termsHtml }} />
           </div>
+          <label className="field-label" htmlFor="company-bank-details">Bank details</label>
+          <textarea id="company-bank-details" value={closing.bankDetails}
+            onChange={e => setClosing({ ...closing, bankDetails: e.target.value })}
+            rows={6} data-testid="co-bank-details" />
         </section>
       </div>
     </div>
