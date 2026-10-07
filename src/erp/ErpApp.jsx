@@ -305,7 +305,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
                 </div>
                 <div className="attention-actions">
                   <a className="icon-btn" href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} data-testid={`attention-call-${i}`}><Phone size={15} /></a>
-                  <a className="icon-btn" href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
+                  <a className="icon-btn" href={`https://api.whatsapp.com/send?phone=${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
                     data-testid={`attention-whatsapp-${i}`}><MessageCircle size={15} /></a>
                 </div>
               </div>
@@ -546,7 +546,7 @@ function ClientsPage({ user, clients, dealers, reload, openClient }) {
                       <div className="phone-cell">
                         <span>{c.phone}</span>
                         <a className="icon-mini" href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} data-testid={`call-${c.id}`}><Phone size={13} /></a>
-                        <a className="icon-mini" href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
+                        <a className="icon-mini" href={`https://api.whatsapp.com/send?phone=${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()} data-testid={`whatsapp-${c.id}`}><MessageCircle size={13} /></a>
                       </div>
                     </td>
@@ -618,7 +618,7 @@ function ClientDetail({ client, onBack, setPage, reload }) {
         </div>
         <div className="heading-actions">
           <a className="ghost-btn" href={`tel:${client.phone}`} data-testid="client-call-button"><Phone size={16} /> Call</a>
-          <a className="ghost-btn" href={`https://wa.me/${client.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" data-testid="client-whatsapp-button"><MessageCircle size={16} /> WhatsApp</a>
+          <a className="ghost-btn" href={`https://api.whatsapp.com/send?phone=${client.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" data-testid="client-whatsapp-button"><MessageCircle size={16} /> WhatsApp</a>
           <button className="primary-btn" onClick={() => setPage("quotations", { client_id: client.id })} data-testid="client-new-quotation-button"><Plus size={17} /> New quotation</button>
         </div>
       </div>
@@ -1105,7 +1105,9 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
     const t = qtTotals(q.items, q.discount);
     const lines = (q.items || []).map(i => `• ${i.name} — ${i.quantity} × ${fmtMoney(i.unit_price)}`);
     const msg = `Namaste ${client?.person || q.client_name || ""},\n\nPlease find our quotation ${q.number}${q.valid_until ? ` (valid till ${fmtDate(q.valid_until)})` : ""}:\n\n${lines.join("\n")}\n\nGrand total (incl. GST): ${fmtMoney(t.total)}\n\nRegards,\n${company?.company_name || "Aalidhra Cashew"}`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    const win = window.open(url, "_blank");
+    if (!win) window.location.href = url;
     if (!q.shared_at) {
       try {
         await api.updateQuotation(q.id, { ...q, shared_at: new Date().toISOString(), status: q.status === "Draft" ? "Sent" : q.status });
@@ -2316,7 +2318,7 @@ const vendorMsg = (v, company) => {
 const waLink = (v, company) => {
   let d = String(v.whatsapp || v.phone || "").replace(/\D/g, "");
   if (d.length === 10) d = "91" + d;
-  return `https://wa.me/${d}?text=${encodeURIComponent(vendorMsg(v, company))}`;
+  return `https://api.whatsapp.com/send?phone=${d}&text=${encodeURIComponent(vendorMsg(v, company))}`;
 };
 const mailLink = (v, company) => `mailto:${v.email || ""}?subject=${encodeURIComponent("Status update required – pending job work")}&body=${encodeURIComponent(vendorMsg(v, company))}`;
 
