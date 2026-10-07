@@ -1529,7 +1529,13 @@ function InventoryPage({ user, items, txns, reload }) {
       <div className="module-summary">
         <div className="summary-icon"><Package size={19} /></div>
         <div><strong>{items.length}</strong><span>total items</span></div>
-        <div><strong className="orange-text">{low}</strong><span>low stock alerts</span></div>
+        <div className="summary-stat clickable" role="button" tabIndex={0}
+          title={lowOnly ? "Show all items" : "Show only low stock items"}
+          data-testid="inv-low-stock-toggle"
+          onClick={() => { setLowOnly(v => !v); setTab("items"); }}
+          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLowOnly(v => !v); setTab("items"); } }}>
+          <strong className={low ? "orange-text" : ""}>{low}</strong><span>low stock alerts</span>
+        </div>
         <div><strong className="green-text">{(txns || []).filter(t => t.txn_type === "IN").length}</strong><span>stock-in entries</span></div>
         <div><strong className="red-text">{(txns || []).filter(t => t.txn_type === "OUT").length}</strong><span>stock-out entries</span></div>
       </div>
