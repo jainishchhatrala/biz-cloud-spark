@@ -872,9 +872,13 @@ function QuotationForm({ initial, clients, products, templates = [], defaultClie
       )}
       <div className="form-row-2">
         <div><label className="field-label">Client *</label>
-          <select value={f.client_id} onChange={e => setF({ ...f, client_id: e.target.value })} data-testid="quotation-client-select">
-            {clients.map(c => <option key={c.id} value={c.id}>{c.company}</option>)}
-          </select></div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <select style={{ flex: 1 }} value={f.client_id} onChange={e => setF({ ...f, client_id: e.target.value })} data-testid="quotation-client-select">
+              {clients.map(c => <option key={c.id} value={c.id}>{c.company}</option>)}
+            </select>
+            <button type="button" className="ghost-btn" onClick={() => setShowClient(true)} data-testid="quotation-add-client-button">
+              <Plus size={15} /> New client</button>
+          </div></div>
         <div><label className="field-label">Valid until</label>
           <input type="date" value={f.valid_until ? f.valid_until.slice(0, 10) : ""}
             onChange={e => setF({ ...f, valid_until: e.target.value ? new Date(e.target.value).toISOString() : "" })}
@@ -902,6 +906,9 @@ function QuotationForm({ initial, clients, products, templates = [], defaultClie
       <button className="primary-btn full-btn" onClick={save} disabled={busy} data-testid="save-quotation-button">
         <Check size={17} /> {busy ? "Saving..." : "Save quotation"}
       </button>
+      <Modal show={showClient} onClose={() => setShowClient(false)} title="Add a new client" wide>
+        <ClientForm initial={null} dealers={null} onSave={saveNewClient} onClose={() => setShowClient(false)} />
+      </Modal>
     </div>
   );
 }
