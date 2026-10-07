@@ -1484,6 +1484,7 @@ function InventoryPage({ user, items, txns, reload }) {
   const [tab, setTab] = useState("items");
   const [txnFilter, setTxnFilter] = useState("");
   const [txnQuery, setTxnQuery] = useState("");
+  const [lowOnly, setLowOnly] = useState(false);
   const [show, setShow] = useState(false);
   const [showTxn, setShowTxn] = useState(false);
   const [edit, setEdit] = useState(null);
