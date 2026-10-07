@@ -1098,6 +1098,21 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
     try { await api.deleteQuotation(q.id); toast.success("Deleted"); await reload(); }
     catch { toast.error("Delete failed"); }
   };
+  const share = async (q) => {
+    const client = clients.find(c => c.id === q.client_id);
+    const phone = String(client?.phone || "").replace(/\D/g, "");
+    if (!phone) { toast.error("This client has no phone number saved"); return; }
+    const t = qtTotals(q.items, q.discount);
+    const lines = (q.items || []).map(i => `• ${i.name} — ${i.quantity} × ${fmtMoney(i.unit_price)}`);
+    const msg = `Namaste ${client?.person || q.client_name || ""},\n\nPlease find our quotation ${q.number}${q.valid_until ? ` (valid till ${fmtDate(q.valid_until)})` : ""}:\n\n${lines.join("\n")}\n\nGrand total (incl. GST): ${fmtMoney(t.total)}\n\nRegards,\n${company?.company_name || "Aalidhra Cashew"}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    if (!q.shared_at) {
+      try {
+        await api.updateQuotation(q.id, { ...q, shared_at: new Date().toISOString(), status: q.status === "Draft" ? "Sent" : q.status });
+        await reload();
+      } catch { /* share still succeeded via WhatsApp */ }
+    }
+  };
   return (
     <div className="page-content" data-testid="page-quotations">
       <div className="page-heading">
@@ -1142,6 +1157,7 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
                     <td><strong>{fmtMoney(total)}</strong></td>
                     <td><Badge>{q.status}</Badge></td>
                     <td className="row-actions">
+                      <button className="icon-btn" onClick={() => share(q)} title="Share on WhatsApp" data-testid={`qt-share-${i}`}><MessageCircle size={15} /></button>
                       <button className="icon-btn" onClick={() => printQuotation(q, company)} title="Preview PDF" data-testid={`qt-print-${i}`}><Printer size={15} /></button>
                       <button className="icon-btn" onClick={() => { setEditing(q); setShow(true); }} data-testid={`qt-edit-${i}`}><Pencil size={15} /></button>
                       {q.status !== "Converted" && can(user, "orders") && <button className="icon-btn" title="Convert to order" onClick={() => convert(q)} data-testid={`qt-convert-${i}`}><ArrowUpRight size={15} /></button>}
