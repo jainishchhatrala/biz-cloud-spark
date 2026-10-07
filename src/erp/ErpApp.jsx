@@ -1105,7 +1105,9 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
     const t = qtTotals(q.items, q.discount);
     const lines = (q.items || []).map(i => `• ${i.name} — ${i.quantity} × ${fmtMoney(i.unit_price)}`);
     const msg = `Namaste ${client?.person || q.client_name || ""},\n\nPlease find our quotation ${q.number}${q.valid_until ? ` (valid till ${fmtDate(q.valid_until)})` : ""}:\n\n${lines.join("\n")}\n\nGrand total (incl. GST): ${fmtMoney(t.total)}\n\nRegards,\n${company?.company_name || "Aalidhra Cashew"}`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    const win = window.open(url, "_blank");
+    if (!win) window.location.href = url;
     if (!q.shared_at) {
       try {
         await api.updateQuotation(q.id, { ...q, shared_at: new Date().toISOString(), status: q.status === "Draft" ? "Sent" : q.status });
