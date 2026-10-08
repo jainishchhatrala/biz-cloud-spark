@@ -31,7 +31,7 @@ const QUOTE_KEYS = ["number", "client_id", "client_name", "order_date", "valid_u
 const QTPL_KEYS = ["name", "description", "items", "discount", "notes"];
 const ORDER_KEYS = ["number", "quotation_id", "client_id", "client_name", "order_date", "expected_delivery", "dispatch_date", "items", "status", "notes", "dealer_id"];
 const PRODUCT_KEYS = ["name", "model_code", "description", "unit", "default_price", "active"];
-const INV_KEYS = ["sku", "name", "category", "unit", "current_stock", "min_level", "supplier", "location"];
+const INV_KEYS = ["sku", "name", "category", "unit", "current_stock", "min_level", "supplier", "location", "kg_per_meter"];
 const JW_KEYS = ["number", "vendor", "item", "work_type", "inventory_item_id", "initial_quantity", "quantity_sent", "quantity_received", "stages", "current_stage_index", "send_date", "expected_return", "status", "direction", "process_stage", "images", "next_followup_at", "followup_notes", "notes"];
 const COMPANY_KEYS = ["company_name", "tagline", "address", "phone", "email", "gstin", "website", "logo_data", "terms_html"];
 
@@ -341,11 +341,11 @@ export const api = {
   deleteInventory: (id) => del("inventory_items", id),
   listInventoryTxns: async () => {
     const [rows, users] = await Promise.all([
-      run(supabase.from("inventory_transactions").select("*, item:inventory_items(sku, name, unit), order:orders(number, client_name), jw:job_work(number, item)").order("at", { ascending: false })),
+      run(supabase.from("inventory_transactions").select("*, item:inventory_items(sku, name, unit, kg_per_meter), order:orders(number, client_name), jw:job_work(number, item)").order("at", { ascending: false })),
       run(supabase.from("profiles").select("id, name")),
     ]);
     return rows.map(({ item, order, jw, ...r }) => ({
-      ...r, item_sku: item?.sku, item_name: item?.name, item_unit: item?.unit,
+      ...r, item_sku: item?.sku, item_name: item?.name, item_unit: item?.unit, item_kg_per_meter: item?.kg_per_meter,
       order_number: order?.number, order_client: order?.client_name,
       job_work_number: jw?.number, job_work_item: jw?.item,
       by_user_name: users.find((x) => x.id === r.by_user)?.name,
@@ -353,7 +353,7 @@ export const api = {
   },
   createInventoryTxn: async (b) => {
     const u = await currentUser();
-    const row = pick(b, ["item_id", "txn_type", "quantity", "at", "reference_number", "party", "remarks", "order_id", "job_work_id", "allow_negative"]);
+    const row = pick(b, ["item_id", "txn_type", "quantity", "at", "reference_number", "party", "remarks", "order_id", "job_work_id", "allow_negative", "entry_unit", "entry_qty"]);
     row.by_user = u.id; row.at = row.at || nowIso(); row.quantity = Number(row.quantity) || 0;
     const { data, error } = await supabase.from("inventory_transactions").insert(row).select().single();
     if (error) fail(error.message.includes("Insufficient") ? error.message + " Pass allow_negative=true to override." : error.message);
