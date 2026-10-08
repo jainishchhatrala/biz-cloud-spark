@@ -535,7 +535,7 @@ export const api = {
     const now = nowIso(), today = now.slice(0, 10);
     return {
       total_clients: clients.length, total_orders: orders.length, active_orders: orders.length - dispatched,
-      in_production: orders.filter((o) => o.status === "In Production").length,
+      in_production: orders.filter((o) => o.status === "In Production" || (o.items || []).some((i) => i.stage && !["In Planning", "Ready for Dispatch", "Dispatched", "Delivered"].includes(i.stage))).length,
       ready_for_dispatch: orders.filter((o) => (o.items || []).some((i) => i.stage === "Ready for Dispatch")).length,
       dispatched,
       today_followups: followups.filter((f) => f.next_followup_at.slice(0, 10) === today).length,
