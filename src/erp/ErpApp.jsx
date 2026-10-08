@@ -1536,8 +1536,13 @@ function InventoryPage({ user, items, txns, reload }) {
       const conv = isRawConv(it);
       const unit = conv ? txn.entry_unit : (it?.unit || "");
       const kg = conv ? Math.round(toKg(txn.quantity, txn.entry_unit, it.kg_per_meter) * 10000) / 10000 : txn.quantity;
-      await api.createInventoryTxn({ ...txn, quantity: kg, entry_unit: unit, entry_qty: txn.quantity, at: new Date().toISOString() });
-      toast.success("Transaction recorded");
+      if (txn.id) {
+        await api.updateInventoryTxn(txn.id, { ...txn, quantity: kg, entry_unit: unit, entry_qty: txn.quantity });
+        toast.success("Transaction updated");
+      } else {
+        await api.createInventoryTxn({ ...txn, quantity: kg, entry_unit: unit, entry_qty: txn.quantity, at: new Date().toISOString() });
+        toast.success("Transaction recorded");
+      }
       setShowTxn(false); setTxn({ item_id: "", txn_type: "IN", quantity: 0, entry_unit: "KG", reference_number: "", party: "", remarks: "" });
       await reload();
     } catch (e) { toast.error(e?.message || "Failed"); }
@@ -1650,10 +1655,10 @@ function InventoryPage({ user, items, txns, reload }) {
               <table>
                 <thead><tr>
                   <th>Date</th><th>Item</th><th>Type</th><th>Qty</th>
-                  <th>Reference</th><th>Party</th><th>Linked to</th><th>By</th><th>Remarks</th>
+                  <th>Reference</th><th>Party</th><th>Linked to</th><th>By</th><th>Remarks</th><th></th>
                 </tr></thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="9"><Empty msg="No stock movements match your filters" /></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan="10"><Empty msg="No stock movements match your filters" /></td></tr>}
                   {filtered.map((t, i) => (
                     <tr key={t.id} data-testid={`inv-txn-row-${i}`}>
                       <td>{fmtDateTime(t.at)}</td>
@@ -1672,6 +1677,11 @@ function InventoryPage({ user, items, txns, reload }) {
                       </td>
                       <td>{t.by_user_name || "—"}</td>
                       <td className="table-sub">{t.remarks || ""}</td>
+                      <td><button className="ghost-btn" title="Edit" data-testid={`inv-txn-edit-${i}`} onClick={() => {
+                        const conv = Number(t.item_kg_per_meter) > 0 && t.entry_unit && t.entry_qty != null;
+                        setTxn({ id: t.id, item_id: t.item_id, txn_type: t.txn_type, quantity: conv ? Number(t.entry_qty) : Number(t.quantity), entry_unit: conv ? t.entry_unit : "KG", reference_number: t.reference_number || "", party: t.party || "", remarks: t.remarks || "" });
+                        setShowTxn(true);
+                      }}>Edit</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1722,7 +1732,7 @@ function InventoryPage({ user, items, txns, reload }) {
           <button className="primary-btn full-btn" onClick={save} data-testid="save-inventory-button"><Check size={17} /> Save</button>
         </div>
       </Modal>
-      <Modal show={showTxn} onClose={() => setShowTxn(false)} title="Record stock movement">
+      <Modal show={showTxn} onClose={() => { setShowTxn(false); setTxn({ item_id: "", txn_type: "IN", quantity: 0, entry_unit: "KG", reference_number: "", party: "", remarks: "" }); }} title={txn.id ? "Edit stock movement" : "Record stock movement"}>
         <div className="form-grid">
           <label className="field-label">Item</label>
           <select value={txn.item_id} onChange={e => setTxn({ ...txn, item_id: e.target.value })} data-testid="txn-item">
