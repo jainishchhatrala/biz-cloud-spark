@@ -1519,7 +1519,7 @@ function InventoryPage({ user, items, txns, reload }) {
     try {
       const kpm = Number(item.kg_per_meter) > 0 ? Number(item.kg_per_meter) : null;
       const body = { ...item, kg_per_meter: kpm, unit: kpm && item.category === "Raw Material" ? "KG" : item.unit };
-      if (kpm && item.category === "Raw Material" && openUnit !== "KG") body.current_stock = r2(toKg(item.current_stock, openUnit, kpm));
+      if (kpm && item.category === "Raw Material" && openUnit !== "KG") body.current_stock = Math.round(toKg(item.current_stock, openUnit, kpm) * 10000) / 10000;
       delete body.scrap_stock;
       if (edit) await api.updateInventory(edit.id, body);
       else await api.createInventory(body);
@@ -1535,7 +1535,7 @@ function InventoryPage({ user, items, txns, reload }) {
       const it = items.find(i => i.id === txn.item_id);
       const conv = isRawConv(it);
       const unit = conv ? txn.entry_unit : (it?.unit || "");
-      const kg = conv ? r2(toKg(txn.quantity, txn.entry_unit, it.kg_per_meter)) : txn.quantity;
+      const kg = conv ? Math.round(toKg(txn.quantity, txn.entry_unit, it.kg_per_meter) * 10000) / 10000 : txn.quantity;
       await api.createInventoryTxn({ ...txn, quantity: kg, entry_unit: unit, entry_qty: txn.quantity, at: new Date().toISOString() });
       toast.success("Transaction recorded");
       setShowTxn(false); setTxn({ item_id: "", txn_type: "IN", quantity: 0, entry_unit: "KG", reference_number: "", party: "", remarks: "" });
