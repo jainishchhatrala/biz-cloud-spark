@@ -59,8 +59,8 @@ const STATUS_TONES = {
 };
 
 /* ========================= Primitives ========================= */
-const Badge = ({ children, tone }) => (
-  <span className={`badge badge-${tone || STATUS_TONES[children] || "neutral"}`}
+const Badge = ({ children, tone, style }) => (
+  <span className={`badge badge-${tone || STATUS_TONES[children] || "neutral"}`} style={style}
     data-testid={`status-badge-${String(children).toLowerCase().replaceAll(" ", "-")}`}>{children}</span>
 );
 const Stars = ({ value }) => (
