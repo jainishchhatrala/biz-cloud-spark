@@ -2193,7 +2193,7 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
                 <div><small>Overall</small><Badge>{detail.status}</Badge></div>
                 <div><small>Auto stock-in</small>
                   <strong className={stockInState.tone + "-text"} data-testid="auto-stockin-state">{stockInState.label}</strong>
-                  <span className="muted-cell" style={{ fontSize: 9 }}>{stockInState.reason}</span>
+                  <span className="muted-cell" style={{ fontSize: 11 }}>{stockInState.reason}</span>
                 </div>
               </div>
               {canFinalize && (
@@ -2424,7 +2424,7 @@ function VendorsPage({ user, company }) {
           </table>
         </div>
       </section>
-      <p className="muted-cell" style={{ marginTop: 10, fontSize: 12 }}>Rating = 50% on-time delivery + 50% low rejection (from completed job-work stages), out of 5 stars.</p>
+      <p className="muted-cell" style={{ marginTop: 10, fontSize: 14 }}>Rating = 50% on-time delivery + 50% low rejection (from completed job-work stages), out of 5 stars.</p>
 
       <Modal show={!!form} onClose={() => setForm(null)} title={form?.id ? "Edit vendor" : "Add vendor"} wide>
         {form && <div className="form-grid">
