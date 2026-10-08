@@ -328,7 +328,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
                   <div className="attention-row" key={it.id} data-testid={`low-stock-row-${i}`}>
                     <div className="machine-thumb"><Package size={17} /></div>
                     <div className="attention-main">
-                      <strong>{it.name} <span className="attention-chip stale">LOW</span></strong>
+                      <strong>{it.name} <span className="attention-chip stale">{Number(it.current_stock) === 0 ? "NO STOCK AVAILABLE" : "LOW"}</span></strong>
                       <span>{it.sku} · {it.location || "—"}</span>
                     </div>
                     <div className="attention-meta">
