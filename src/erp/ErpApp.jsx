@@ -1611,7 +1611,7 @@ function InventoryPage({ user, items, txns, reload }) {
                   <td data-testid={`inv-stock-${i}`}><strong><MultiQty kg={it.current_stock} kpm={isRawConv(it) ? it.kg_per_meter : 0} unit={it.unit} /></strong></td>
                   <td>{Number(it.scrap_stock) > 0 ? <span className="orange-text">{r2(it.scrap_stock)} {it.unit}</span> : "—"}</td>
                   <td>{it.min_level}</td>
-                  <td><Badge tone={Number(it.current_stock) === 0 ? "red" : it.current_stock < it.min_level ? "red" : "green"}>
+                  <td><Badge tone={Number(it.current_stock) === 0 ? "red" : it.current_stock < it.min_level ? "red" : "green"} style={Number(it.current_stock) === 0 ? { whiteSpace: "normal", textAlign: "left", lineHeight: 1.3 } : undefined}>
                     {Number(it.current_stock) === 0 ? "NO STOCK AVAILABLE" : it.current_stock < it.min_level ? "Low stock" : "Healthy"}</Badge></td>
                   <td className="row-actions">
                     <button className="icon-btn" onClick={() => { setEdit(it); setItem({ ...it, kg_per_meter: it.kg_per_meter ?? "" }); setOpenUnit("KG"); setShow(true); }} data-testid={`inv-edit-${i}`}><Pencil size={15} /></button>
