@@ -359,6 +359,13 @@ export const api = {
     if (error) fail(error.message.includes("Insufficient") ? error.message + " Pass allow_negative=true to override." : error.message);
     return data;
   },
+  updateInventoryTxn: async (id, b) => {
+    const row = pick(b, ["item_id", "txn_type", "quantity", "reference_number", "party", "remarks", "entry_unit", "entry_qty"]);
+    row.quantity = Number(row.quantity) || 0;
+    const { data, error } = await supabase.from("inventory_transactions").update(row).eq("id", id).select().single();
+    if (error) fail(error.message);
+    return data;
+  },
 
   // vendors
   listVendors: async () => {

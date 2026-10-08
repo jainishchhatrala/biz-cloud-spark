@@ -43,6 +43,13 @@
       "when": 1791446608589,
       "tag": "0005_raw_material_units_and_scrap",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791464549417,
+      "tag": "0006_editable_inventory_txn",
+      "breakpoints": true
     }
   ]
 }
