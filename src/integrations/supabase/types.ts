@@ -252,10 +252,12 @@ export type Database = {
           created_at: string
           current_stock: number
           id: string
+          kg_per_meter: number | null
           location: string | null
           min_level: number
           name: string
           purchase_reference: string | null
+          scrap_stock: number
           sku: string
           supplier: string | null
           unit: string
@@ -266,10 +268,12 @@ export type Database = {
           created_at?: string
           current_stock?: number
           id?: string
+          kg_per_meter?: number | null
           location?: string | null
           min_level?: number
           name: string
           purchase_reference?: string | null
+          scrap_stock?: number
           sku: string
           supplier?: string | null
           unit?: string
@@ -280,10 +284,12 @@ export type Database = {
           created_at?: string
           current_stock?: number
           id?: string
+          kg_per_meter?: number | null
           location?: string | null
           min_level?: number
           name?: string
           purchase_reference?: string | null
+          scrap_stock?: number
           sku?: string
           supplier?: string | null
           unit?: string
@@ -297,6 +303,8 @@ export type Database = {
           at: string | null
           by_user: string | null
           created_at: string
+          entry_qty: number | null
+          entry_unit: string | null
           id: string
           item_id: string
           job_work_id: string | null
@@ -313,6 +321,8 @@ export type Database = {
           at?: string | null
           by_user?: string | null
           created_at?: string
+          entry_qty?: number | null
+          entry_unit?: string | null
           id?: string
           item_id: string
           job_work_id?: string | null
@@ -329,6 +339,8 @@ export type Database = {
           at?: string | null
           by_user?: string | null
           created_at?: string
+          entry_qty?: number | null
+          entry_unit?: string | null
           id?: string
           item_id?: string
           job_work_id?: string | null

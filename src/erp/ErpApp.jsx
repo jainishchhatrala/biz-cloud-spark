@@ -1480,6 +1480,29 @@ function PaymentsPage({ user, payments, orders, reload }) {
 }
 
 /* ========================= Inventory ========================= */
+/* Raw material unit conversion: stock is stored in KG; length units convert via weight per meter. */
+const MM_PER_FT = 304.8;
+const isRawConv = (it) => !!it && it.category === "Raw Material" && Number(it.kg_per_meter) > 0;
+const toKg = (qty, unit, kpm) => {
+  const q = Number(qty) || 0, k = Number(kpm) || 0;
+  if (unit === "MM") return (q / 1000) * k;
+  if (unit === "FT") return (q * MM_PER_FT / 1000) * k;
+  return q;
+};
+const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const multiQty = (kg, kpm) => {
+  const k = Number(kpm) || 0; const mm = k ? (Number(kg) || 0) / k * 1000 : 0;
+  return { kg: r2(kg), ft: r2(mm / MM_PER_FT), mm: Math.round(mm) };
+};
+function MultiQty({ kg, kpm, unit, sign = "" }) {
+  if (!(Number(kpm) > 0)) return <>{sign}{r2(kg)} {unit || ""}</>;
+  const m = multiQty(kg, kpm);
+  return <span>{sign}{m.kg} KG<br /><span className="table-sub">{sign}{m.ft} FT · {sign}{m.mm} MM</span></span>;
+}
+const TXN_LABEL = { IN: "IN", OUT: "OUT", ADJUSTMENT: "ADJUSTMENT", SCRAP: "TO SCRAP", SCRAP_SALE: "SCRAP SOLD" };
+const TXN_SIGN = { IN: "+", OUT: "−", ADJUSTMENT: "=", SCRAP: "−", SCRAP_SALE: "−" };
+const TXN_TONE = { IN: "green", OUT: "red", ADJUSTMENT: "orange", SCRAP: "orange", SCRAP_SALE: "red" };
+
 function InventoryPage({ user, items, txns, reload }) {
   const [tab, setTab] = useState("items");
   const [txnFilter, setTxnFilter] = useState("");
@@ -1488,26 +1511,36 @@ function InventoryPage({ user, items, txns, reload }) {
   const [show, setShow] = useState(false);
   const [showTxn, setShowTxn] = useState(false);
   const [edit, setEdit] = useState(null);
-  const [item, setItem] = useState({ sku: "", name: "", category: "Raw Material", unit: "pcs", current_stock: 0, min_level: 0, supplier: "", location: "" });
-  const [txn, setTxn] = useState({ item_id: "", txn_type: "IN", quantity: 0, reference_number: "", party: "", remarks: "" });
+  const [openUnit, setOpenUnit] = useState("KG");
+  const [item, setItem] = useState({ sku: "", name: "", category: "Raw Material", unit: "KG", current_stock: 0, min_level: 0, supplier: "", location: "", kg_per_meter: "" });
+  const [txn, setTxn] = useState({ item_id: "", txn_type: "IN", quantity: 0, entry_unit: "KG", reference_number: "", party: "", remarks: "" });
   const save = async () => {
     if (!item.sku || !item.name) { toast.error("SKU & name required"); return; }
     try {
-      if (edit) await api.updateInventory(edit.id, item);
-      else await api.createInventory(item);
+      const kpm = Number(item.kg_per_meter) > 0 ? Number(item.kg_per_meter) : null;
+      const body = { ...item, kg_per_meter: kpm, unit: kpm && item.category === "Raw Material" ? "KG" : item.unit };
+      if (kpm && item.category === "Raw Material" && openUnit !== "KG") body.current_stock = Math.round(toKg(item.current_stock, openUnit, kpm) * 10000) / 10000;
+      delete body.scrap_stock;
+      if (edit) await api.updateInventory(edit.id, body);
+      else await api.createInventory(body);
+      setOpenUnit("KG");
       toast.success("Saved");
-      setShow(false); setEdit(null); setItem({ sku: "", name: "", category: "Raw Material", unit: "pcs", current_stock: 0, min_level: 0, supplier: "", location: "" });
+      setShow(false); setEdit(null); setItem({ sku: "", name: "", category: "Raw Material", unit: "KG", current_stock: 0, min_level: 0, supplier: "", location: "", kg_per_meter: "" });
       await reload();
     } catch { toast.error("Save failed"); }
   };
   const saveTxn = async () => {
     if (!txn.item_id || !txn.quantity) { toast.error("Item & quantity required"); return; }
     try {
-      await api.createInventoryTxn({ ...txn, at: new Date().toISOString() });
+      const it = items.find(i => i.id === txn.item_id);
+      const conv = isRawConv(it);
+      const unit = conv ? txn.entry_unit : (it?.unit || "");
+      const kg = conv ? Math.round(toKg(txn.quantity, txn.entry_unit, it.kg_per_meter) * 10000) / 10000 : txn.quantity;
+      await api.createInventoryTxn({ ...txn, quantity: kg, entry_unit: unit, entry_qty: txn.quantity, at: new Date().toISOString() });
       toast.success("Transaction recorded");
-      setShowTxn(false); setTxn({ item_id: "", txn_type: "IN", quantity: 0, reference_number: "", party: "", remarks: "" });
+      setShowTxn(false); setTxn({ item_id: "", txn_type: "IN", quantity: 0, entry_unit: "KG", reference_number: "", party: "", remarks: "" });
       await reload();
-    } catch { toast.error("Failed"); }
+    } catch (e) { toast.error(e?.message || "Failed"); }
   };
   const del = async (it) => {
     if (!window.confirm(`Delete ${it.name}?`)) return;
@@ -1538,6 +1571,7 @@ function InventoryPage({ user, items, txns, reload }) {
         </div>
         <div><strong className="green-text">{(txns || []).filter(t => t.txn_type === "IN").length}</strong><span>stock-in entries</span></div>
         <div><strong className="red-text">{(txns || []).filter(t => t.txn_type === "OUT").length}</strong><span>stock-out entries</span></div>
+        <div><strong className="orange-text">{r2(items.reduce((a, i) => a + (Number(i.scrap_stock) || 0), 0))} KG</strong><span>scrap in yard</span></div>
       </div>
       <div className="status-tabs">
         <button className={tab === "items" ? "active" : ""} onClick={() => setTab("items")} data-testid="inv-tab-items">
@@ -1560,21 +1594,22 @@ function InventoryPage({ user, items, txns, reload }) {
           )}
           <div className="table-scroll">
           <table>
-            <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Location</th><th>Stock</th><th>Min level</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Location</th><th>Stock</th><th>Scrap</th><th>Min level</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {shown.length === 0 && <tr><td colSpan="8"><Empty msg={lowOnly ? "No low stock items" : "No inventory items"} /></td></tr>}
+              {shown.length === 0 && <tr><td colSpan="9"><Empty msg={lowOnly ? "No low stock items" : "No inventory items"} /></td></tr>}
               {shown.map((it, i) => (
                 <tr key={it.id} data-testid={`inventory-row-${i}`}>
                   <td><strong className="mono">{it.sku}</strong></td>
                   <td><strong>{it.name}</strong></td>
                   <td>{it.category}</td>
                   <td>{it.location || "—"}</td>
-                  <td><strong>{it.current_stock} {it.unit}</strong></td>
+                  <td data-testid={`inv-stock-${i}`}><strong><MultiQty kg={it.current_stock} kpm={isRawConv(it) ? it.kg_per_meter : 0} unit={it.unit} /></strong></td>
+                  <td>{Number(it.scrap_stock) > 0 ? <span className="orange-text">{r2(it.scrap_stock)} {it.unit}</span> : "—"}</td>
                   <td>{it.min_level}</td>
                   <td><Badge tone={it.current_stock < it.min_level ? "red" : "green"}>
                     {it.current_stock < it.min_level ? "Low stock" : "Healthy"}</Badge></td>
                   <td className="row-actions">
-                    <button className="icon-btn" onClick={() => { setEdit(it); setItem(it); setShow(true); }} data-testid={`inv-edit-${i}`}><Pencil size={15} /></button>
+                    <button className="icon-btn" onClick={() => { setEdit(it); setItem({ ...it, kg_per_meter: it.kg_per_meter ?? "" }); setOpenUnit("KG"); setShow(true); }} data-testid={`inv-edit-${i}`}><Pencil size={15} /></button>
                     {user.role === "Admin" && <button className="icon-btn danger" onClick={() => del(it)} data-testid={`inv-delete-${i}`}><Trash2 size={15} /></button>}
                   </td>
                 </tr>
@@ -1605,6 +1640,10 @@ function InventoryPage({ user, items, txns, reload }) {
                   onClick={() => setTxnFilter("OUT")} data-testid="inv-filter-out">Stock Out</button>
                 <button className={`filter-btn attention-filter ${txnFilter === "ADJUSTMENT" ? "on" : ""}`}
                   onClick={() => setTxnFilter("ADJUSTMENT")} data-testid="inv-filter-adj">Adjustment</button>
+                <button className={`filter-btn attention-filter ${txnFilter === "SCRAP" ? "on" : ""}`}
+                  onClick={() => setTxnFilter("SCRAP")} data-testid="inv-filter-scrap">To scrap</button>
+                <button className={`filter-btn attention-filter ${txnFilter === "SCRAP_SALE" ? "on" : ""}`}
+                  onClick={() => setTxnFilter("SCRAP_SALE")} data-testid="inv-filter-scrap-sale">Scrap sold</button>
               </div>
             </div>
             <div className="table-scroll">
@@ -1619,10 +1658,11 @@ function InventoryPage({ user, items, txns, reload }) {
                     <tr key={t.id} data-testid={`inv-txn-row-${i}`}>
                       <td>{fmtDateTime(t.at)}</td>
                       <td><strong>{t.item_name || "—"}</strong><br /><span className="table-sub mono">{t.item_sku}</span></td>
-                      <td><Badge tone={t.txn_type === "IN" ? "green" : t.txn_type === "OUT" ? "red" : "orange"}>{t.txn_type}</Badge></td>
-                      <td><strong className={t.txn_type === "IN" ? "green-text" : t.txn_type === "OUT" ? "red-text" : "orange-text"}>
-                        {t.txn_type === "IN" ? "+" : t.txn_type === "OUT" ? "−" : "="}{t.quantity} {t.item_unit || ""}
-                      </strong></td>
+                      <td><Badge tone={TXN_TONE[t.txn_type] || "orange"}>{TXN_LABEL[t.txn_type] || t.txn_type}</Badge></td>
+                      <td><strong className={`${TXN_TONE[t.txn_type] || "orange"}-text`}>
+                        <MultiQty kg={t.quantity} kpm={t.item_kg_per_meter} unit={t.item_unit} sign={TXN_SIGN[t.txn_type] || ""} />
+                      </strong>
+                      {t.entry_unit && t.entry_qty != null && Number(t.item_kg_per_meter) > 0 && <div className="table-sub">entered: {t.entry_qty} {t.entry_unit}</div>}</td>
                       <td className="mono">{t.reference_number || "—"}</td>
                       <td>{t.party || "—"}</td>
                       <td>
@@ -1658,6 +1698,19 @@ function InventoryPage({ user, items, txns, reload }) {
             <div><label className="field-label">Location</label>
               <input value={item.location} onChange={e => setItem({ ...item, location: e.target.value })} data-testid="inv-location" /></div>
           </div>
+          {item.category === "Raw Material" && (
+            <div className="form-row-3">
+              <div><label className="field-label">Weight per meter (KG/m)</label>
+                <input type="number" step="0.001" placeholder="e.g. 2.39 for 40x40 2mm" value={item.kg_per_meter ?? ""} onChange={e => setItem({ ...item, kg_per_meter: e.target.value })} data-testid="inv-kpm" /></div>
+              <div><label className="field-label">Opening stock entered in</label>
+                <select value={openUnit} onChange={e => setOpenUnit(e.target.value)} disabled={!(Number(item.kg_per_meter) > 0)} data-testid="inv-open-unit">
+                  <option>KG</option><option>FT</option><option>MM</option></select></div>
+              <div className="table-sub" style={{ alignSelf: "end", paddingBottom: 8 }}>
+                {Number(item.kg_per_meter) > 0
+                  ? (() => { const m = multiQty(toKg(item.current_stock, openUnit, item.kg_per_meter), item.kg_per_meter); return `Stock = ${m.kg} KG · ${m.ft} FT · ${m.mm} MM`; })()
+                  : "Add weight per meter to track pipes in KG, FT and MM"}</div>
+            </div>
+          )}
           <div className="form-row-3">
             <div><label className="field-label">Current stock</label>
               <input type="number" value={item.current_stock} onChange={e => setItem({ ...item, current_stock: parseFloat(e.target.value) || 0 })} data-testid="inv-stock" /></div>
@@ -1680,10 +1733,25 @@ function InventoryPage({ user, items, txns, reload }) {
             <div><label className="field-label">Type</label>
               <select value={txn.txn_type} onChange={e => setTxn({ ...txn, txn_type: e.target.value })} data-testid="txn-type">
                 <option value="IN">Stock In</option><option value="OUT">Stock Out</option><option value="ADJUSTMENT">Adjustment</option>
+                <option value="SCRAP">Waste → Scrap</option><option value="SCRAP_SALE">Sell scrap</option>
               </select></div>
             <div><label className="field-label">Quantity</label>
-              <input type="number" value={txn.quantity} onChange={e => setTxn({ ...txn, quantity: parseFloat(e.target.value) || 0 })} data-testid="txn-qty" /></div>
+              {(() => { const it = items.find(i => i.id === txn.item_id); return isRawConv(it) ? (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input type="number" value={txn.quantity} onChange={e => setTxn({ ...txn, quantity: parseFloat(e.target.value) || 0 })} data-testid="txn-qty" />
+                  <select style={{ width: 80 }} value={txn.entry_unit} onChange={e => setTxn({ ...txn, entry_unit: e.target.value })} data-testid="txn-unit">
+                    <option>KG</option><option>FT</option><option>MM</option></select>
+                </div>) : <input type="number" value={txn.quantity} onChange={e => setTxn({ ...txn, quantity: parseFloat(e.target.value) || 0 })} data-testid="txn-qty" />; })()}
+            </div>
           </div>
+          {(() => { const it = items.find(i => i.id === txn.item_id); if (!it) return null;
+            const kpm = isRawConv(it) ? it.kg_per_meter : 0;
+            const kg = kpm ? toKg(txn.quantity, txn.entry_unit, kpm) : txn.quantity;
+            const m = multiQty(kg, kpm);
+            return <div className="table-sub" data-testid="txn-conversion">
+              {kpm ? <>This entry = <strong>{m.kg} KG · {m.ft} FT · {m.mm} MM</strong><br /></> : null}
+              In stock: <MultiQty kg={it.current_stock} kpm={kpm} unit={it.unit} /> · Scrap: {r2(it.scrap_stock)} {it.unit}
+            </div>; })()}
           <div className="form-row-2">
             <div><label className="field-label">Reference</label>
               <input value={txn.reference_number} onChange={e => setTxn({ ...txn, reference_number: e.target.value })} data-testid="txn-ref" /></div>
