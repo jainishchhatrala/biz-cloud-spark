@@ -664,6 +664,9 @@ export type Database = {
           batch_id: string
           by_user: string | null
           created_at: string
+          cut_h_mm: number | null
+          cut_l_mm: number | null
+          cut_w_mm: number | null
           finished_at: string | null
           id: string
           machine_type: string | null
@@ -685,6 +688,9 @@ export type Database = {
           batch_id: string
           by_user?: string | null
           created_at?: string
+          cut_h_mm?: number | null
+          cut_l_mm?: number | null
+          cut_w_mm?: number | null
           finished_at?: string | null
           id?: string
           machine_type?: string | null
@@ -706,6 +712,9 @@ export type Database = {
           batch_id?: string
           by_user?: string | null
           created_at?: string
+          cut_h_mm?: number | null
+          cut_l_mm?: number | null
+          cut_w_mm?: number | null
           finished_at?: string | null
           id?: string
           machine_type?: string | null
