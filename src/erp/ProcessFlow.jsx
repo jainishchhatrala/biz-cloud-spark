@@ -32,7 +32,7 @@ export const sheetsNeeded = (pl, pw, sl, sw, nos) => {
   return per ? { per, sheets: Math.ceil(nos / per) } : { per: 0, sheets: null };
 };
 
-const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", sheet_mm: "", sheet_nos: "",
+const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", cut_l: "", cut_w: "", cut_h: "", sheet_mm: "", sheet_nos: "",
   issue_qty: "", issue_unit: "KG", vendor: "", notes: "", drawing_data: "", drawing_name: "", pl: "", pw: "", sl: "2500", sw: "1250" };
 
 export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
@@ -69,13 +69,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
   // auto-fill issue quantity from size × nos (cutting) or sheet nos (laser)
   const autoIssue = useMemo(() => {
-    if (f.step === "CUTTING" && num(f.size_mm) && num(f.nos)) {
-      const mm = num(f.size_mm) * num(f.nos);
+    if (f.step === "CUTTING" && num(f.cut_l) && num(f.nos)) {
+      const mm = num(f.cut_l) * num(f.nos);
       return isRawConv(raw) ? { qty: mm, unit: "MM" } : { qty: "", unit: raw?.unit || "" };
     }
     if (f.step === "LASER CUTTING" && num(f.sheet_nos)) return { qty: num(f.sheet_nos), unit: raw?.unit || "" };
     return null;
-  }, [f.step, f.size_mm, f.nos, f.sheet_nos, raw]);
+  }, [f.step, f.cut_l, f.nos, f.sheet_nos, raw]);
   const issueQty = f.issue_qty !== "" ? num(f.issue_qty) : num(autoIssue?.qty);
   const issueUnit = isRawConv(raw) ? (f.issue_qty !== "" ? f.issue_unit : autoIssue?.unit || f.issue_unit) : raw?.unit || "";
   const issueStock = isRawConv(raw) ? toKg(issueQty, issueUnit, num(raw.kg_per_meter)) : issueQty;
@@ -106,7 +106,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       }
       await run(supabase.from("process_steps").insert({
         batch_id: batch.id, step: f.step, vendor: f.vendor || null, qty_sent: num(f.nos),
-        size_mm: num(f.size_mm) || null, sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id,
+        size_mm: num(f.cut_l) || null, cut_l_mm: num(f.cut_l) || null, cut_w_mm: num(f.cut_w) || null, cut_h_mm: num(f.cut_h) || null,
       }));
       toast.success(`Batch ${number} started in ${f.step}`);
       setShow(false); setF(BLANK); await load(); reload?.();
