@@ -44,6 +44,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   const [readyQty, setReadyQty] = useState("");
   const [fwd, setFwd] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [editB, setEditB] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
