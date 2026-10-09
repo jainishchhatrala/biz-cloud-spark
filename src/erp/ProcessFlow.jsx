@@ -391,6 +391,35 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                 {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
               </select></div>
           </div>
+          <div className="form-row-2">
+            <div><label className="field-label">First step</label>
+              <select value={editB.step} onChange={(e) => setEditB({ ...editB, step: e.target.value })} data-testid="pf-edit-step">
+                <option>CUTTING</option><option>LASER CUTTING</option><option>MACHINING</option></select></div>
+            {editB.step === "MACHINING" ? (
+              <div><label className="field-label">Machine</label>
+                <select value={editB.machine_type} onChange={(e) => setEditB({ ...editB, machine_type: e.target.value })} data-testid="pf-edit-machine">
+                  <option value="">— choose —</option>{MACHINES.map((m) => <option key={m}>{m}</option>)}</select></div>
+            ) : (
+              <div><label className="field-label">Vendor / in-house</label>
+                <input list="pf-vendors-edit" value={editB.vendor} onChange={(e) => setEditB({ ...editB, vendor: e.target.value })} data-testid="pf-edit-vendor" />
+                <datalist id="pf-vendors-edit">{vendorsFor(editB.step, editB.machine_type).concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist></div>
+            )}
+          </div>
+          {editB.step === "MACHINING" && (
+            <div><label className="field-label">Vendor / in-house</label>
+              <input list="pf-vendors-edit" value={editB.vendor} onChange={(e) => setEditB({ ...editB, vendor: e.target.value })} data-testid="pf-edit-vendor2" /></div>
+          )}
+          {editB.step === "CUTTING" || editB.step === "MACHINING" ? (
+            <div><label className="field-label">Cut size per piece (MM)</label><input type="number" value={editB.size_mm} onChange={(e) => setEditB({ ...editB, size_mm: e.target.value })} data-testid="pf-edit-size" /></div>
+          ) : (
+            <div className="form-row-2">
+              <div><label className="field-label">Sheet thickness (MM)</label><input type="number" value={editB.sheet_mm} onChange={(e) => setEditB({ ...editB, sheet_mm: e.target.value })} data-testid="pf-edit-sheet-mm" /></div>
+              <div><label className="field-label">Sheets used (nos)</label><input type="number" value={editB.sheet_nos} onChange={(e) => setEditB({ ...editB, sheet_nos: e.target.value })} data-testid="pf-edit-sheet-nos" /></div>
+            </div>
+          )}
+          <div><label className="field-label">Drawing (photo / PDF){editB.drawing_name ? ` — current: ${editB.drawing_name}` : ""}</label>
+            <input type="file" accept="image/*,application/pdf" onChange={(e) => onEditDrawing(e.target.files?.[0])} data-testid="pf-edit-drawing" />
+            {editB.new_drawing_name && <span className="table-sub">New: {editB.new_drawing_name}</span>}</div>
           <div><label className="field-label">Notes</label><input value={editB.notes} onChange={(e) => setEditB({ ...editB, notes: e.target.value })} data-testid="pf-edit-notes" /></div>
           <button className="primary-btn full-btn" disabled={busy} onClick={saveBatchEdit} data-testid="pf-edit-save"><Check size={17} /> Save changes</button>
         </div>}
