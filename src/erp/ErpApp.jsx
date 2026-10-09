@@ -12,6 +12,7 @@ import {
 import { api, fmtMoney, fmtDate, fmtDateTime, relTime, can, hidesFinance } from "./api";
 import { openQuotationPrint } from "./print-quotation";
 import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
+import ProcessFlow from "./ProcessFlow";
 
 /* ========================= Config ========================= */
 const BRAND = { name: "Aalidhra", suffix: " Cashew", tagline: "CASHEW EXPORT ERP" };
@@ -1815,6 +1816,7 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
   const [preview, setPreview] = useState(null);
   const [vendorList, setVendorList] = useState([]);
   const [raw, setRaw] = useState({ item_id: "", qty: "", unit: "KG" });
+  const [jwView, setJwView] = useState("flow");
 
   useEffect(() => { api.jobworkSuggestions().then(setSugg).catch(() => {}); }, [jobs]);
   useEffect(() => { api.listVendors().then(r => setVendorList(Array.isArray(r) ? r : (r?.vendors || []))).catch(() => {}); }, []);
@@ -1919,6 +1921,11 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
 
   return (
     <div className="page-content" data-testid="page-jobwork">
+      <div className="tabs">
+        <button className={jwView === "flow" ? "active" : ""} onClick={() => setJwView("flow")} data-testid="jw-tab-flow">Process flow (step by step)</button>
+        <button className={jwView === "list" ? "active" : ""} onClick={() => setJwView("list")} data-testid="jw-tab-list">Job work entries</button>
+      </div>
+      {jwView === "flow" ? <ProcessFlow Modal={Modal} inventory={inventory} vendorList={vendorList} reload={reload} /> : <>
       <div className="page-heading">
         <div><p className="eyebrow">EXTERNAL OPERATIONS · MULTI-STAGE ROUTING</p><h1>Job Work</h1>
           <p className="subheading">Route a batch through multiple vendors; auto stock-in on return.</p></div>
