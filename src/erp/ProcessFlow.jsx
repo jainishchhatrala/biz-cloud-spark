@@ -113,6 +113,34 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setBusy(false);
   };
 
+  const saveBatchEdit = async () => {
+    if (!editB) return;
+    if (!editB.part_name.trim()) return toast.error("Part name required");
+    if (!num(editB.total_nos)) return toast.error("Nos required");
+    setBusy(true);
+    try {
+      await run(supabase.from("process_batches").update({
+        part_name: editB.part_name.trim(), total_nos: num(editB.total_nos),
+        raw_item_id: editB.raw_item_id || null, spare_item_id: editB.spare_item_id || null, notes: editB.notes || null,
+      }).eq("id", editB.id));
+      toast.success(`Batch ${editB.number} updated`);
+      setEditB(null); await load();
+    } catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
+
+  const deleteBatch = async (b) => {
+    if (!window.confirm(`Batch ${b.number} (${b.part_name}) delete karvu? Aena badha steps pan delete thase.`)) return;
+    setBusy(true);
+    try {
+      await run(supabase.from("process_steps").delete().eq("batch_id", b.id));
+      await run(supabase.from("process_batches").delete().eq("id", b.id));
+      toast.success(`Batch ${b.number} deleted`);
+      setDetail(null); await load();
+    } catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
+
   const saveReady = async () => {
     const s = readyM; const add = num(readyQty);
     if (add <= 0) return toast.error("Enter ready nos");
