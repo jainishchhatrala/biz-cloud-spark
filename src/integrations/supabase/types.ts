@@ -596,6 +596,150 @@ export type Database = {
           },
         ]
       }
+      process_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          drawing_data: string | null
+          drawing_name: string | null
+          id: string
+          notes: string | null
+          number: string
+          part_name: string
+          raw_item_id: string | null
+          spare_item_id: string | null
+          status: string
+          total_nos: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          drawing_data?: string | null
+          drawing_name?: string | null
+          id?: string
+          notes?: string | null
+          number: string
+          part_name: string
+          raw_item_id?: string | null
+          spare_item_id?: string | null
+          status?: string
+          total_nos?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          drawing_data?: string | null
+          drawing_name?: string | null
+          id?: string
+          notes?: string | null
+          number?: string
+          part_name?: string
+          raw_item_id?: string | null
+          spare_item_id?: string | null
+          status?: string
+          total_nos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_batches_raw_item_id_fkey"
+            columns: ["raw_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_batches_spare_item_id_fkey"
+            columns: ["spare_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_steps: {
+        Row: {
+          batch_id: string
+          by_user: string | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          machine_type: string | null
+          notes: string | null
+          parent_step_id: string | null
+          qty_forwarded: number
+          qty_ready: number
+          qty_sent: number
+          sheet_mm: number | null
+          sheet_nos: number | null
+          size_mm: number | null
+          started_at: string
+          status: string
+          step: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          batch_id: string
+          by_user?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          machine_type?: string | null
+          notes?: string | null
+          parent_step_id?: string | null
+          qty_forwarded?: number
+          qty_ready?: number
+          qty_sent?: number
+          sheet_mm?: number | null
+          sheet_nos?: number | null
+          size_mm?: number | null
+          started_at?: string
+          status?: string
+          step: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          batch_id?: string
+          by_user?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          machine_type?: string | null
+          notes?: string | null
+          parent_step_id?: string | null
+          qty_forwarded?: number
+          qty_ready?: number
+          qty_sent?: number
+          sheet_mm?: number | null
+          sheet_nos?: number | null
+          size_mm?: number | null
+          started_at?: string
+          status?: string
+          step?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_steps_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "process_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_steps_parent_step_id_fkey"
+            columns: ["parent_step_id"]
+            isOneToOne: false
+            referencedRelation: "process_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_updates: {
         Row: {
           by_user: string | null

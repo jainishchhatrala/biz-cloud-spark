@@ -50,6 +50,13 @@
       "when": 1791464549417,
       "tag": "0006_editable_inventory_txn",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791550542504,
+      "tag": "0007_process_flow",
+      "breakpoints": true
     }
   ]
 }

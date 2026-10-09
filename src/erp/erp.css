@@ -190,3 +190,15 @@ tr.row-overdue td:first-child{box-shadow:inset 3px 0 #e85d1a}
 .module-summary .summary-stat.clickable:hover{background:#fff4ec}
 .module-summary .summary-stat.clickable.on strong{color:#d33a36}
 .module-summary .summary-stat.clickable.on span{color:#d33a36;font-weight:700}
+.pf-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:12px 0}
+.pf-board{display:grid;grid-template-columns:repeat(7,minmax(170px,1fr));gap:10px;overflow-x:auto;margin-bottom:16px}
+.pf-col{background:var(--panel,#f7f7f5);border:1px solid var(--line,#e5e5e5);border-radius:10px;padding:10px;min-height:120px}
+.pf-col-head{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.pf-col-head span{font-size:13px;opacity:.7}
+.pf-card{background:var(--card,#fff);border:1px solid var(--line,#e5e5e5);border-radius:8px;padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px}
+.pf-part{font-weight:600}
+.pf-qty{display:flex;justify-content:space-between;font-size:14px}
+.pf-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.pf-actions button{padding:4px 8px;font-size:13px}
+.pf-choices{display:flex;flex-wrap:wrap;gap:6px}
+.pf-est{display:flex;flex-direction:column;gap:6px}
