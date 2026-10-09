@@ -1,7 +1,7 @@
 // Step-by-step shop-floor process flow: each batch moves one step at a time; next step is chosen only when work is ready.
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, ArrowRight, Check, FileText } from "lucide-react";
+import { Plus, ArrowRight, Check, FileText, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { api, fmtDate } from "./api";
 
