@@ -2012,6 +2012,28 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
               <input type="datetime-local" value={j.next_followup_at}
                 onChange={e => setJ({ ...j, next_followup_at: e.target.value })} data-testid="jw-followup" /></div>
           </div>
+          {!edit && (
+            <div className="form-row-2">
+              <div><label className="field-label">Workflow route (from plan)</label>
+                <select defaultValue="" onChange={e => applyRoute(e.target.value)} data-testid="jw-route">
+                  <option value="">— Custom stages —</option>
+                  {JW_ROUTES.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                </select></div>
+              <div><label className="field-label">Raw material issued (auto stock-out)</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <select value={raw.item_id} onChange={e => setRaw({ ...raw, item_id: e.target.value })} data-testid="jw-raw-item">
+                    <option value="">— None —</option>
+                    {inventory.filter(it => it.category === "Raw Material").map(it => <option key={it.id} value={it.id}>{it.sku} · {it.name}</option>)}
+                  </select>
+                  <input type="number" style={{ width: 90 }} value={raw.qty} onChange={e => setRaw({ ...raw, qty: e.target.value })} data-testid="jw-raw-qty" placeholder="Qty" />
+                  {isRawConv(rawItem)
+                    ? <select style={{ width: 70 }} value={raw.unit} onChange={e => setRaw({ ...raw, unit: e.target.value })}><option>KG</option><option>FT</option><option>MM</option></select>
+                    : <span className="table-sub" style={{ alignSelf: "center" }}>{rawItem?.unit || ""}</span>}
+                </div>
+                {rawItem && rawKg > 0 && <span className="table-sub">Stock out: {r2(rawKg)} {isRawConv(rawItem) ? "KG" : rawItem.unit} (in stock {r2(rawItem.current_stock)})</span>}
+              </div>
+            </div>
+          )}
           <label className="field-label">Routing stages (sequential)</label>
           <div className="qt-items">
             {j.stages.map((s, i) => (
