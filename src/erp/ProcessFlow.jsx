@@ -241,7 +241,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                     <div className="pf-qty"><span>In work {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
                     <div className="pf-actions">
                       {num(s.qty_ready) < num(s.qty_sent) && <button className="ghost-btn" onClick={() => { setReadyM(s); setReadyQty(String(num(s.qty_sent) - num(s.qty_ready))); }} data-testid="pf-ready-btn"><Check size={14} /> Ready</button>}
-                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: NEXT[s.step][0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Aagal <ArrowRight size={14} /></button>}
+                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: NEXT[s.step][0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
                     </div>
                   </div>
                 );
