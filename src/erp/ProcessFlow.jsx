@@ -266,7 +266,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                   <td className={sp >= num(b.total_nos) ? "green-text" : ""}>{sp} / {num(b.total_nos)}</td>
                   <td>{fmtDate(b.created_at)}</td>
                   <td>
-                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); setEditB({ ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "" }); }}><Pencil size={14} /> Edit</button>
+                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); openEdit(b); }}><Pencil size={14} /> Edit</button>
                   </td>
                 </tr>
               );
@@ -428,7 +428,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       <Modal show={!!detail} onClose={() => setDetail(null)} title={detail ? `${detail.number} · ${detail.part_name}` : ""} eyebrow="BATCH HISTORY" wide>
         {detail && <div className="form-grid">
           <div className="pf-actions">
-            <button className="ghost-btn" onClick={() => { setEditB({ ...detail, total_nos: String(num(detail.total_nos)), raw_item_id: detail.raw_item_id || "", spare_item_id: detail.spare_item_id || "", notes: detail.notes || "" }); }} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
+            <button className="ghost-btn" onClick={() => openEdit(detail)} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
             <button className="ghost-btn" disabled={busy} onClick={() => deleteBatch(detail)} data-testid="pf-detail-delete"><Trash2 size={14} /> Delete batch</button>
           </div>
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
