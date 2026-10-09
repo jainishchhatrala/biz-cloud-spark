@@ -1791,6 +1791,18 @@ const JW_BLANK = {
   images: [], next_followup_at: "", followup_notes: "", notes: "",
 };
 
+const JW_ROUTES = [
+  { name: "Sheet: Laser cutting → Bending → Fabrication", steps: ["Laser Cutting", "Bending", "Fabrication"] },
+  { name: "Cutting → Fabrication (direct use)", steps: ["Cutting", "Fabrication"] },
+  { name: "Cutting → CNC → Fitting", steps: ["Cutting", "CNC", "Fitting"] },
+  { name: "Cutting → CNC → Hardening → Fitting", steps: ["Cutting", "CNC", "Hardening", "Fitting"] },
+  { name: "Cutting → VMC → Fitting", steps: ["Cutting", "VMC", "Fitting"] },
+  { name: "Cutting → VMC → Hardening → Fitting", steps: ["Cutting", "VMC", "Hardening", "Fitting"] },
+  { name: "Cutting → VMC → Nitriding → Fitting", steps: ["Cutting", "VMC", "Nitriding", "Fitting"] },
+  { name: "Cutting → VMC → Blackodised → Fitting", steps: ["Cutting", "VMC", "Blackodised", "Fitting"] },
+  { name: "Cutting → Lathe → Fitting", steps: ["Cutting", "Lathe", "Fitting"] },
+];
+
 function JobWorkPage({ user, jobs, inventory, reload }) {
   const [show, setShow] = useState(false);
   const [edit, setEdit] = useState(null);
@@ -1801,30 +1813,54 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
   const [invChoice, setInvChoice] = useState({ mode: "skip", inventory_item_id: "", new_item: { sku: "", name: "", category: "Raw Material", unit: "pcs", min_level: 0, location: "" } });
   const [detail, setDetail] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [vendorList, setVendorList] = useState([]);
+  const [raw, setRaw] = useState({ item_id: "", qty: "", unit: "KG" });
 
   useEffect(() => { api.jobworkSuggestions().then(setSugg).catch(() => {}); }, [jobs]);
+  useEffect(() => { api.listVendors().then(r => setVendorList(Array.isArray(r) ? r : (r?.vendors || []))).catch(() => {}); }, []);
+  const vendorsFor = (proc) => {
+    const p = (proc || "").toLowerCase().slice(0, 5);
+    if (!p) return [];
+    return vendorList.filter(v => v.active !== false && `${v.services || ""} ${v.vendor_type || ""}`.toLowerCase().includes(p)).map(v => v.name);
+  };
+  const applyRoute = (name) => {
+    const r = JW_ROUTES.find(x => x.name === name); if (!r) return;
+    setJ(s => ({ ...s, work_type: r.name, stages: r.steps.map((p, i) => ({ ...JW_BLANK_STAGE, stage_number: i + 1, process: p, vendor: vendorsFor(p)[0] || "", quantity_sent: s.stages[0]?.quantity_sent || 0 })) }));
+  };
 
-  const openCreate = () => { setEdit(null); setJ({ ...JW_BLANK, stages: [{ ...JW_BLANK_STAGE }] }); setShow(true); };
+  const openCreate = () => { setEdit(null); setRaw({ item_id: "", qty: "", unit: "KG" }); setJ({ ...JW_BLANK, stages: [{ ...JW_BLANK_STAGE }] }); setShow(true); };
   const openEdit = (jw) => { setEdit(jw); setJ({ ...JW_BLANK, ...jw }); setShow(true); };
   const addStage = () => setJ(s => ({ ...s, stages: [...s.stages, { ...JW_BLANK_STAGE, stage_number: s.stages.length + 1 }] }));
   const removeStage = (i) => setJ(s => ({ ...s, stages: s.stages.filter((_, idx) => idx !== i) }));
-  const setStage = (i, k, v) => setJ(s => ({ ...s, stages: s.stages.map((st, idx) => idx === i ? { ...st, [k]: v } : st) }));
+  const setStage = (i, k, v) => setJ(s => ({ ...s, stages: s.stages.map((st, idx) => {
+    if (idx !== i) return st;
+    const n = { ...st, [k]: v };
+    if (k === "process" && !st.vendor) n.vendor = vendorsFor(v)[0] || "";
+    return n;
+  }) }));
   const addImages = async (files) => {
     const list = Array.from(files || []).filter(f => f.type.startsWith("image/"));
     const readers = list.map(f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); }));
     const results = await Promise.all(readers);
     setJ(s => ({ ...s, images: [...(s.images || []), ...results] }));
   };
+  const rawItem = inventory.find(it => it.id === raw.item_id);
+  const rawKg = rawItem ? (isRawConv(rawItem) ? toKg(Number(raw.qty) || 0, raw.unit, rawItem.kg_per_meter) : Number(raw.qty) || 0) : 0;
   const save = async () => {
     if (!j.item) { toast.error("Item required"); return; }
     if (!j.stages.length || !j.stages[0].vendor) { toast.error("At least one stage with vendor is required"); return; }
     try {
       if (edit) await api.updateJobwork(edit.id, j);
-      else await api.createJobwork(j);
+      else {
+        const saved = await api.createJobwork(j);
+        if (rawItem && rawKg > 0) {
+          await api.createInventoryTxn({ item_id: rawItem.id, txn_type: "OUT", quantity: rawKg, entry_unit: isRawConv(rawItem) ? raw.unit : rawItem.unit, entry_qty: Number(raw.qty), job_work_id: saved?.id, reference_number: saved?.number, party: j.stages[0].vendor, remarks: "Raw material issued for job work" });
+        }
+      }
       toast.success("Saved");
       setShow(false); setEdit(null);
       await reload();
-    } catch (e) { toast.error(e?.response?.data?.detail || "Save failed"); }
+    } catch (e) { toast.error(e?.message || e?.response?.data?.detail || "Save failed"); }
   };
   const del = async (jw) => {
     if (!window.confirm(`Delete ${jw.number}?`)) return;
@@ -1976,6 +2012,28 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
               <input type="datetime-local" value={j.next_followup_at}
                 onChange={e => setJ({ ...j, next_followup_at: e.target.value })} data-testid="jw-followup" /></div>
           </div>
+          {!edit && (
+            <div className="form-row-2">
+              <div><label className="field-label">Workflow route (from plan)</label>
+                <select defaultValue="" onChange={e => applyRoute(e.target.value)} data-testid="jw-route">
+                  <option value="">— Custom stages —</option>
+                  {JW_ROUTES.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                </select></div>
+              <div><label className="field-label">Raw material issued (auto stock-out)</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <select value={raw.item_id} onChange={e => setRaw({ ...raw, item_id: e.target.value })} data-testid="jw-raw-item">
+                    <option value="">— None —</option>
+                    {inventory.filter(it => it.category === "Raw Material").map(it => <option key={it.id} value={it.id}>{it.sku} · {it.name}</option>)}
+                  </select>
+                  <input type="number" style={{ width: 90 }} value={raw.qty} onChange={e => setRaw({ ...raw, qty: e.target.value })} data-testid="jw-raw-qty" placeholder="Qty" />
+                  {isRawConv(rawItem)
+                    ? <select style={{ width: 70 }} value={raw.unit} onChange={e => setRaw({ ...raw, unit: e.target.value })}><option>KG</option><option>FT</option><option>MM</option></select>
+                    : <span className="table-sub" style={{ alignSelf: "center" }}>{rawItem?.unit || ""}</span>}
+                </div>
+                {rawItem && rawKg > 0 && <span className="table-sub">Stock out: {r2(rawKg)} {isRawConv(rawItem) ? "KG" : rawItem.unit} (in stock {r2(rawItem.current_stock)})</span>}
+              </div>
+            </div>
+          )}
           <label className="field-label">Routing stages (sequential)</label>
           <div className="qt-items">
             {j.stages.map((s, i) => (
@@ -1987,8 +2045,10 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
                 </div>
                 <div className="form-row-2">
                   <div><label className="field-label">Vendor *</label>
-                    <input list="jw-vendors" value={s.vendor} onChange={e => setStage(i, "vendor", e.target.value)}
-                      data-testid={`jw-stage-vendor-${i}`} /></div>
+                    <input list={`jw-vendors-${i}`} value={s.vendor} onChange={e => setStage(i, "vendor", e.target.value)}
+                      data-testid={`jw-stage-vendor-${i}`} />
+                    <datalist id={`jw-vendors-${i}`}>{[...new Set([...vendorsFor(s.process), ...sugg.vendors])].map(v => <option key={v} value={v} />)}</datalist>
+                    {vendorsFor(s.process).length > 0 && <span className="table-sub">Suggested for {s.process}: {vendorsFor(s.process).join(", ")}</span>}</div>
                   <div><label className="field-label">Process</label>
                     <input list="jw-processes" value={s.process} onChange={e => setStage(i, "process", e.target.value)}
                       data-testid={`jw-stage-process-${i}`} placeholder="Hardening / Nitriding / Blackodising..." /></div>
