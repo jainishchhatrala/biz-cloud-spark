@@ -2045,8 +2045,10 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
                 </div>
                 <div className="form-row-2">
                   <div><label className="field-label">Vendor *</label>
-                    <input list="jw-vendors" value={s.vendor} onChange={e => setStage(i, "vendor", e.target.value)}
-                      data-testid={`jw-stage-vendor-${i}`} /></div>
+                    <input list={`jw-vendors-${i}`} value={s.vendor} onChange={e => setStage(i, "vendor", e.target.value)}
+                      data-testid={`jw-stage-vendor-${i}`} />
+                    <datalist id={`jw-vendors-${i}`}>{[...new Set([...vendorsFor(s.process), ...sugg.vendors])].map(v => <option key={v} value={v} />)}</datalist>
+                    {vendorsFor(s.process).length > 0 && <span className="table-sub">Suggested for {s.process}: {vendorsFor(s.process).join(", ")}</span>}</div>
                   <div><label className="field-label">Process</label>
                     <input list="jw-processes" value={s.process} onChange={e => setStage(i, "process", e.target.value)}
                       data-testid={`jw-stage-process-${i}`} placeholder="Hardening / Nitriding / Blackodising..." /></div>
