@@ -1,7 +1,7 @@
 // Step-by-step shop-floor process flow: each batch moves one step at a time; next step is chosen only when work is ready.
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, ArrowRight, Check, FileText } from "lucide-react";
+import { Plus, ArrowRight, Check, FileText, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { api, fmtDate } from "./api";
 
@@ -44,6 +44,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   const [readyQty, setReadyQty] = useState("");
   const [fwd, setFwd] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [editB, setEditB] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -108,6 +109,34 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       }));
       toast.success(`Batch ${number} started in ${f.step}`);
       setShow(false); setF(BLANK); await load(); reload?.();
+    } catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
+
+  const saveBatchEdit = async () => {
+    if (!editB) return;
+    if (!editB.part_name.trim()) return toast.error("Part name required");
+    if (!num(editB.total_nos)) return toast.error("Nos required");
+    setBusy(true);
+    try {
+      await run(supabase.from("process_batches").update({
+        part_name: editB.part_name.trim(), total_nos: num(editB.total_nos),
+        raw_item_id: editB.raw_item_id || null, spare_item_id: editB.spare_item_id || null, notes: editB.notes || null,
+      }).eq("id", editB.id));
+      toast.success(`Batch ${editB.number} updated`);
+      setEditB(null); await load();
+    } catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
+
+  const deleteBatch = async (b) => {
+    if (!window.confirm(`Batch ${b.number} (${b.part_name}) delete karvu? Aena badha steps pan delete thase.`)) return;
+    setBusy(true);
+    try {
+      await run(supabase.from("process_steps").delete().eq("batch_id", b.id));
+      await run(supabase.from("process_batches").delete().eq("id", b.id));
+      toast.success(`Batch ${b.number} deleted`);
+      setDetail(null); await load();
     } catch (e) { toast.error(errMsg(e)); }
     setBusy(false);
   };
@@ -198,9 +227,9 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
       <section className="panel table-panel">
         <div className="table-scroll"><table>
-          <thead><tr><th>Batch</th><th>Part</th><th>Nos</th><th>Flow</th><th>Spare in</th><th>Started</th></tr></thead>
+          <thead><tr><th>Batch</th><th>Part</th><th>Nos</th><th>Flow</th><th>Spare in</th><th>Started</th><th></th></tr></thead>
           <tbody>
-            {batches.length === 0 && <tr><td colSpan="6"><p className="table-sub">No batches yet</p></td></tr>}
+            {batches.length === 0 && <tr><td colSpan="7"><p className="table-sub">No batches yet</p></td></tr>}
             {batches.map((b) => {
               const bs = steps.filter((s) => s.batch_id === b.id);
               const sp = bs.filter((s) => s.step === "SPARE IN").reduce((a, s) => a + num(s.qty_sent), 0);
@@ -210,6 +239,9 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                   <td className="table-sub">{[...new Set(bs.map(label))].join(" → ")}</td>
                   <td className={sp >= num(b.total_nos) ? "green-text" : ""}>{sp} / {num(b.total_nos)}</td>
                   <td>{fmtDate(b.created_at)}</td>
+                  <td>
+                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); setEditB({ ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "" }); }}><Pencil size={14} /> Edit</button>
+                  </td>
                 </tr>
               );
             })}
@@ -315,8 +347,35 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         </div>}
       </Modal>
 
+      <Modal show={!!editB} onClose={() => setEditB(null)} title={editB ? `Edit batch ${editB.number}` : ""} eyebrow="PROCESS FLOW">
+        {editB && <div className="form-grid">
+          <div className="form-row-2">
+            <div><label className="field-label">Part name *</label><input value={editB.part_name} onChange={(e) => setEditB({ ...editB, part_name: e.target.value })} data-testid="pf-edit-part" /></div>
+            <div><label className="field-label">Nos (total) *</label><input type="number" value={editB.total_nos} onChange={(e) => setEditB({ ...editB, total_nos: e.target.value })} data-testid="pf-edit-nos" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Raw material</label>
+              <select value={editB.raw_item_id} onChange={(e) => setEditB({ ...editB, raw_item_id: e.target.value })} data-testid="pf-edit-raw">
+                <option value="">— none —</option>
+                {inventory.filter((i) => i.category === "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
+              </select></div>
+            <div><label className="field-label">Final spare item</label>
+              <select value={editB.spare_item_id} onChange={(e) => setEditB({ ...editB, spare_item_id: e.target.value })} data-testid="pf-edit-spare">
+                <option value="">— choose later —</option>
+                {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
+              </select></div>
+          </div>
+          <div><label className="field-label">Notes</label><input value={editB.notes} onChange={(e) => setEditB({ ...editB, notes: e.target.value })} data-testid="pf-edit-notes" /></div>
+          <button className="primary-btn full-btn" disabled={busy} onClick={saveBatchEdit} data-testid="pf-edit-save"><Check size={17} /> Save changes</button>
+        </div>}
+      </Modal>
+
       <Modal show={!!detail} onClose={() => setDetail(null)} title={detail ? `${detail.number} · ${detail.part_name}` : ""} eyebrow="BATCH HISTORY" wide>
         {detail && <div className="form-grid">
+          <div className="pf-actions">
+            <button className="ghost-btn" onClick={() => { setEditB({ ...detail, total_nos: String(num(detail.total_nos)), raw_item_id: detail.raw_item_id || "", spare_item_id: detail.spare_item_id || "", notes: detail.notes || "" }); }} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
+            <button className="ghost-btn" disabled={busy} onClick={() => deleteBatch(detail)} data-testid="pf-detail-delete"><Trash2 size={14} /> Delete batch</button>
+          </div>
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
           {detail.drawing_data && <a className="text-btn" href={detail.drawing_data} download={detail.drawing_name || "drawing"} target="_blank" rel="noreferrer"><FileText size={15} /> {detail.drawing_name || "Drawing"}</a>}
           <table><thead><tr><th>Step</th><th>Vendor</th><th>Sent</th><th>Ready</th><th>Forwarded</th><th>Status</th><th>Date</th></tr></thead>
