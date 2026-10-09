@@ -120,7 +120,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setEditB({
       ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "",
       step_id: first?.id || null, step: first?.step || "CUTTING", machine_type: first?.machine_type || "", vendor: first?.vendor || "",
-      cut_l: first?.cut_l_mm ? String(first.cut_l_mm) : "", cut_w: first?.cut_w_mm ? String(first.cut_w_mm) : "", cut_h: first?.cut_h_mm ? String(first.cut_h_mm) : "",
+      cut_l: first?.cut_l_mm ? String(first.cut_l_mm) : (first?.size_mm ? String(first.size_mm) : ""), cut_w: first?.cut_w_mm ? String(first.cut_w_mm) : "", cut_h: first?.cut_h_mm ? String(first.cut_h_mm) : "",
       size_mm: first?.size_mm ? String(first.size_mm) : "", sheet_mm: first?.sheet_mm ? String(first.sheet_mm) : "", sheet_nos: first?.sheet_nos ? String(first.sheet_nos) : "",
       new_drawing_data: "", new_drawing_name: "",
     });
@@ -149,7 +149,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         await run(supabase.from("process_steps").update({
           step: editB.step, machine_type: editB.step === "MACHINING" ? editB.machine_type || null : null,
           vendor: editB.vendor || null,
-          size_mm: num(editB.size_mm) || null, cut_l_mm: num(editB.cut_l) || null, cut_w_mm: num(editB.cut_w) || null, cut_h_mm: num(editB.cut_h) || null,
+          size_mm: editB.step === "CUTTING" ? (num(editB.cut_l) || null) : (num(editB.size_mm) || null), cut_l_mm: num(editB.cut_l) || null, cut_w_mm: num(editB.cut_w) || null, cut_h_mm: num(editB.cut_h) || null,
           sheet_mm: num(editB.sheet_mm) || null, sheet_nos: num(editB.sheet_nos) || null,
         }).eq("id", editB.step_id));
       }
