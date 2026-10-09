@@ -2317,6 +2317,7 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
           <img src={preview} alt="" style={{ maxHeight: "90vh", maxWidth: "90vw", borderRadius: 8 }} onClick={e => e.stopPropagation()} />
         </div>
       )}
+      </>}
     </div>
   );
 }
