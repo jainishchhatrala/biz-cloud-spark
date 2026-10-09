@@ -372,6 +372,10 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
       <Modal show={!!detail} onClose={() => setDetail(null)} title={detail ? `${detail.number} · ${detail.part_name}` : ""} eyebrow="BATCH HISTORY" wide>
         {detail && <div className="form-grid">
+          <div className="pf-actions">
+            <button className="ghost-btn" onClick={() => { setEditB({ ...detail, total_nos: String(num(detail.total_nos)), raw_item_id: detail.raw_item_id || "", spare_item_id: detail.spare_item_id || "", notes: detail.notes || "" }); }} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
+            <button className="ghost-btn" disabled={busy} onClick={() => deleteBatch(detail)} data-testid="pf-detail-delete"><Trash2 size={14} /> Delete batch</button>
+          </div>
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
           {detail.drawing_data && <a className="text-btn" href={detail.drawing_data} download={detail.drawing_name || "drawing"} target="_blank" rel="noreferrer"><FileText size={15} /> {detail.drawing_name || "Drawing"}</a>}
           <table><thead><tr><th>Step</th><th>Vendor</th><th>Sent</th><th>Ready</th><th>Forwarded</th><th>Status</th><th>Date</th></tr></thead>
