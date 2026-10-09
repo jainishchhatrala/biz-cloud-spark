@@ -227,9 +227,9 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
       <section className="panel table-panel">
         <div className="table-scroll"><table>
-          <thead><tr><th>Batch</th><th>Part</th><th>Nos</th><th>Flow</th><th>Spare in</th><th>Started</th></tr></thead>
+          <thead><tr><th>Batch</th><th>Part</th><th>Nos</th><th>Flow</th><th>Spare in</th><th>Started</th><th></th></tr></thead>
           <tbody>
-            {batches.length === 0 && <tr><td colSpan="6"><p className="table-sub">No batches yet</p></td></tr>}
+            {batches.length === 0 && <tr><td colSpan="7"><p className="table-sub">No batches yet</p></td></tr>}
             {batches.map((b) => {
               const bs = steps.filter((s) => s.batch_id === b.id);
               const sp = bs.filter((s) => s.step === "SPARE IN").reduce((a, s) => a + num(s.qty_sent), 0);
@@ -239,6 +239,9 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                   <td className="table-sub">{[...new Set(bs.map(label))].join(" → ")}</td>
                   <td className={sp >= num(b.total_nos) ? "green-text" : ""}>{sp} / {num(b.total_nos)}</td>
                   <td>{fmtDate(b.created_at)}</td>
+                  <td>
+                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); setEditB({ ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "" }); }}><Pencil size={14} /> Edit</button>
+                  </td>
                 </tr>
               );
             })}
