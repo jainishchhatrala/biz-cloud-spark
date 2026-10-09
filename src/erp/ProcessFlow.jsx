@@ -32,7 +32,7 @@ export const sheetsNeeded = (pl, pw, sl, sw, nos) => {
   return per ? { per, sheets: Math.ceil(nos / per) } : { per: 0, sheets: null };
 };
 
-const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", sheet_mm: "", sheet_nos: "",
+const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", cut_l: "", cut_w: "", cut_h: "", sheet_mm: "", sheet_nos: "",
   issue_qty: "", issue_unit: "KG", vendor: "", notes: "", drawing_data: "", drawing_name: "", pl: "", pw: "", sl: "2500", sw: "1250" };
 
 export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
@@ -69,13 +69,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
   // auto-fill issue quantity from size × nos (cutting) or sheet nos (laser)
   const autoIssue = useMemo(() => {
-    if (f.step === "CUTTING" && num(f.size_mm) && num(f.nos)) {
-      const mm = num(f.size_mm) * num(f.nos);
+    if (f.step === "CUTTING" && num(f.cut_l) && num(f.nos)) {
+      const mm = num(f.cut_l) * num(f.nos);
       return isRawConv(raw) ? { qty: mm, unit: "MM" } : { qty: "", unit: raw?.unit || "" };
     }
     if (f.step === "LASER CUTTING" && num(f.sheet_nos)) return { qty: num(f.sheet_nos), unit: raw?.unit || "" };
     return null;
-  }, [f.step, f.size_mm, f.nos, f.sheet_nos, raw]);
+  }, [f.step, f.cut_l, f.nos, f.sheet_nos, raw]);
   const issueQty = f.issue_qty !== "" ? num(f.issue_qty) : num(autoIssue?.qty);
   const issueUnit = isRawConv(raw) ? (f.issue_qty !== "" ? f.issue_unit : autoIssue?.unit || f.issue_unit) : raw?.unit || "";
   const issueStock = isRawConv(raw) ? toKg(issueQty, issueUnit, num(raw.kg_per_meter)) : issueQty;
@@ -106,7 +106,8 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       }
       await run(supabase.from("process_steps").insert({
         batch_id: batch.id, step: f.step, vendor: f.vendor || null, qty_sent: num(f.nos),
-        size_mm: num(f.size_mm) || null, sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id,
+        size_mm: num(f.cut_l) || null, cut_l_mm: num(f.cut_l) || null, cut_w_mm: num(f.cut_w) || null, cut_h_mm: num(f.cut_h) || null,
+        sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id,
       }));
       toast.success(`Batch ${number} started in ${f.step}`);
       setShow(false); setF(BLANK); await load(); reload?.();
@@ -119,6 +120,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setEditB({
       ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "",
       step_id: first?.id || null, step: first?.step || "CUTTING", machine_type: first?.machine_type || "", vendor: first?.vendor || "",
+      cut_l: first?.cut_l_mm ? String(first.cut_l_mm) : (first?.size_mm ? String(first.size_mm) : ""), cut_w: first?.cut_w_mm ? String(first.cut_w_mm) : "", cut_h: first?.cut_h_mm ? String(first.cut_h_mm) : "",
       size_mm: first?.size_mm ? String(first.size_mm) : "", sheet_mm: first?.sheet_mm ? String(first.sheet_mm) : "", sheet_nos: first?.sheet_nos ? String(first.sheet_nos) : "",
       new_drawing_data: "", new_drawing_name: "",
     });
@@ -147,7 +149,8 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         await run(supabase.from("process_steps").update({
           step: editB.step, machine_type: editB.step === "MACHINING" ? editB.machine_type || null : null,
           vendor: editB.vendor || null,
-          size_mm: num(editB.size_mm) || null, sheet_mm: num(editB.sheet_mm) || null, sheet_nos: num(editB.sheet_nos) || null,
+          size_mm: editB.step === "CUTTING" ? (num(editB.cut_l) || null) : (num(editB.size_mm) || null), cut_l_mm: num(editB.cut_l) || null, cut_w_mm: num(editB.cut_w) || null, cut_h_mm: num(editB.cut_h) || null,
+          sheet_mm: num(editB.sheet_mm) || null, sheet_nos: num(editB.sheet_nos) || null,
         }).eq("id", editB.step_id));
       }
       toast.success(`Batch ${editB.number} updated`);
@@ -252,7 +255,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                     <button className="text-btn" onClick={() => setDetail(b)}>{b?.number}</button>
                     <div className="pf-part">{b?.part_name}</div>
                     {(s.machine_type || s.vendor) && <div className="table-sub">{[s.machine_type, s.vendor].filter(Boolean).join(" · ")}</div>}
-                    {s.size_mm && <div className="table-sub">Size {s.size_mm} MM</div>}
+                    {(s.cut_l_mm || s.cut_w_mm || s.cut_h_mm || s.size_mm) && <div className="table-sub">Size {[s.cut_l_mm || s.size_mm, s.cut_w_mm, s.cut_h_mm].filter(Boolean).join(" × ")} MM</div>}
                     {s.sheet_nos && <div className="table-sub">{s.sheet_nos} sheet · {s.sheet_mm || "?"} MM</div>}
                     <div className="pf-qty"><span>In work {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
                     <div className="pf-actions">
@@ -309,7 +312,11 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
             <div><label className="field-label">Nos (parts) *</label><input type="number" value={f.nos} onChange={(e) => setF({ ...f, nos: e.target.value })} data-testid="pf-nos" /></div>
           </div>
           {f.step === "CUTTING" ? (
-            <div><label className="field-label">Cut size per piece (MM)</label><input type="number" value={f.size_mm} onChange={(e) => setF({ ...f, size_mm: e.target.value })} data-testid="pf-size" /></div>
+            <div className="form-row-3">
+              <div><label className="field-label">Length (MM)</label><input type="number" value={f.cut_l} onChange={(e) => setF({ ...f, cut_l: e.target.value })} data-testid="pf-cut-l" /></div>
+              <div><label className="field-label">Width (MM)</label><input type="number" value={f.cut_w} onChange={(e) => setF({ ...f, cut_w: e.target.value })} data-testid="pf-cut-w" /></div>
+              <div><label className="field-label">Height (MM)</label><input type="number" value={f.cut_h} onChange={(e) => setF({ ...f, cut_h: e.target.value })} data-testid="pf-cut-h" /></div>
+            </div>
           ) : (
             <>
               <div className="form-row-2">
@@ -439,7 +446,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
             <div><label className="field-label">Vendor / in-house</label>
               <input list="pf-vendors-edit" value={editB.vendor} onChange={(e) => setEditB({ ...editB, vendor: e.target.value })} data-testid="pf-edit-vendor2" /></div>
           )}
-          {editB.step === "CUTTING" || editB.step === "MACHINING" ? (
+          {editB.step === "CUTTING" ? (
+            <div className="form-row-3">
+              <div><label className="field-label">Length (MM)</label><input type="number" value={editB.cut_l} onChange={(e) => setEditB({ ...editB, cut_l: e.target.value })} data-testid="pf-edit-cut-l" /></div>
+              <div><label className="field-label">Width (MM)</label><input type="number" value={editB.cut_w} onChange={(e) => setEditB({ ...editB, cut_w: e.target.value })} data-testid="pf-edit-cut-w" /></div>
+              <div><label className="field-label">Height (MM)</label><input type="number" value={editB.cut_h} onChange={(e) => setEditB({ ...editB, cut_h: e.target.value })} data-testid="pf-edit-cut-h" /></div>
+            </div>
+          ) : editB.step === "MACHINING" ? (
             <div><label className="field-label">Cut size per piece (MM)</label><input type="number" value={editB.size_mm} onChange={(e) => setEditB({ ...editB, size_mm: e.target.value })} data-testid="pf-edit-size" /></div>
           ) : (
             <div className="form-row-2">
