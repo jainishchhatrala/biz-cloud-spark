@@ -7,13 +7,13 @@ import { api, fmtDate } from "./api";
 
 export const STEPS = ["CUTTING", "LASER CUTTING", "MACHINING", "BENDING", "HARDENING", "NITRIDING", "BLACKODISING"];
 export const NEXT = {
-  CUTTING: ["MACHINING", "LASER CUTTING", "SPARE IN"],
-  "LASER CUTTING": ["BENDING", "SPARE IN"],
-  MACHINING: ["HARDENING", "NITRIDING", "BLACKODISING", "SPARE IN"],
-  BENDING: ["SPARE IN"],
-  HARDENING: ["NITRIDING", "BLACKODISING", "SPARE IN"],
-  NITRIDING: ["BLACKODISING", "SPARE IN"],
-  BLACKODISING: ["SPARE IN"],
+  CUTTING: ["MACHINING", "LASER CUTTING", "SPARE IN", "FACTORY IN"],
+  "LASER CUTTING": ["BENDING", "SPARE IN", "FACTORY IN"],
+  MACHINING: ["HARDENING", "NITRIDING", "BLACKODISING", "SPARE IN", "FACTORY IN"],
+  BENDING: ["SPARE IN", "FACTORY IN"],
+  HARDENING: ["NITRIDING", "BLACKODISING", "SPARE IN", "FACTORY IN"],
+  NITRIDING: ["BLACKODISING", "SPARE IN", "FACTORY IN"],
+  BLACKODISING: ["SPARE IN", "FACTORY IN"],
 };
 const MACHINES = ["CNC", "VMC", "LATHE"];
 const MM_PER_FT = 304.8;
@@ -46,6 +46,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   const [detail, setDetail] = useState(null);
   const [editB, setEditB] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [fout, setFout] = useState(null);
 
   const load = async () => {
     try {
@@ -187,11 +188,11 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setBusy(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
-      const spare = fwd.next === "SPARE IN";
+      const spare = fwd.next === "SPARE IN" || fwd.next === "FACTORY IN";
       if (spare) {
-        if (!fwd.spare_item_id) throw new Error("Choose the spare item to stock in");
+        if (!fwd.spare_item_id) throw new Error("Choose the item to stock in");
         await api.createInventoryTxn({ item_id: fwd.spare_item_id, txn_type: "IN", quantity: qty, reference_number: batch?.number,
-          party: s.vendor, remarks: `Spare in from ${s.step} – ${batch?.part_name || ""}` });
+          party: s.vendor, remarks: `${fwd.next} from ${s.step} – ${batch?.part_name || ""}` });
       }
       await run(supabase.from("process_steps").insert({
         batch_id: s.batch_id, parent_step_id: s.id, step: fwd.next, machine_type: fwd.next === "MACHINING" ? fwd.machine : null,
@@ -202,8 +203,22 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       const done = fwdTotal >= num(s.qty_sent);
       await run(supabase.from("process_steps").update({ qty_forwarded: fwdTotal, status: done ? "Done" : "Open", finished_at: done ? new Date().toISOString() : null }).eq("id", s.id));
       if (spare && batch && !batch.spare_item_id) await run(supabase.from("process_batches").update({ spare_item_id: fwd.spare_item_id }).eq("id", batch.id));
-      toast.success(spare ? `${qty} nos added to spare stock` : `${qty} nos sent to ${fwd.next}`);
+      toast.success(spare ? `${qty} nos added to stock (${fwd.next})` : `${qty} nos sent to ${fwd.next}`);
       setFwd(null); await load(); if (spare) reload?.();
+    } catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
+
+  const doFactoryOut = async () => {
+    const qty = num(fout.qty);
+    if (!fout.item_id) return toast.error("Choose the item");
+    if (qty <= 0) return toast.error("Enter nos");
+    setBusy(true);
+    try {
+      await api.createInventoryTxn({ item_id: fout.item_id, txn_type: "OUT", quantity: qty, party: fout.machine || null,
+        remarks: `Factory out${fout.machine ? ` – used in machine: ${fout.machine}` : ""}${fout.notes ? ` – ${fout.notes}` : ""}` });
+      toast.success(`${qty} nos taken out from factory`);
+      setFout(null); reload?.();
     } catch (e) { toast.error(errMsg(e)); }
     setBusy(false);
   };
@@ -217,7 +232,8 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     <div data-testid="process-flow">
       <div className="pf-toolbar">
         <p className="subheading">Each batch moves one step at a time — choose the next step only when work is ready.</p>
-        <button className="primary-btn" onClick={() => { setF(BLANK); setShow(true); }} data-testid="pf-new-batch"><Plus size={17} /> New batch</button>
+        <div style={{ display: "flex", gap: 8 }}><button className="ghost-btn" onClick={() => setFout({ item_id: "", qty: "", machine: "", notes: "" })} data-testid="pf-factory-out">Factory out</button>
+        <button className="primary-btn" onClick={() => { setF(BLANK); setShow(true); }} data-testid="pf-new-batch"><Plus size={17} /> New batch</button></div>
       </div>
 
       <div className="pf-board" data-testid="pf-board">
@@ -340,6 +356,20 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         </div>
       </Modal>
 
+      <Modal show={!!fout} onClose={() => setFout(null)} title="Factory out" eyebrow="PROCESS FLOW">
+        {fout && <div className="form-grid">
+          <div><label className="field-label">Item</label>
+            <select value={fout.item_id} onChange={(e) => setFout({ ...fout, item_id: e.target.value })} data-testid="pf-fout-item">
+              <option value="">— choose —</option>
+              {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name} ({num(i.current_stock)} in stock)</option>)}
+            </select></div>
+          <div><label className="field-label">Nos</label><input type="number" value={fout.qty} onChange={(e) => setFout({ ...fout, qty: e.target.value })} data-testid="pf-fout-qty" /></div>
+          <div><label className="field-label">Used in which machine (record only)</label><input value={fout.machine} onChange={(e) => setFout({ ...fout, machine: e.target.value })} placeholder="e.g. SM 1200 Cashew Machine" data-testid="pf-fout-machine" /></div>
+          <div><label className="field-label">Notes</label><input value={fout.notes} onChange={(e) => setFout({ ...fout, notes: e.target.value })} /></div>
+          <button className="primary-btn full-btn" disabled={busy} onClick={doFactoryOut} data-testid="pf-fout-save">Save</button>
+        </div>}
+      </Modal>
+
       <Modal show={!!readyM} onClose={() => setReadyM(null)} title={`Ready in ${readyM?.step || ""}`} eyebrow="PROCESS FLOW">
         <div className="form-grid">
           <div><label className="field-label">How many nos are ready?</label><input type="number" value={readyQty} onChange={(e) => setReadyQty(e.target.value)} data-testid="pf-ready-qty" /></div>
@@ -357,8 +387,8 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
               <button key={m} className={fwd.machine === m ? "primary-btn" : "ghost-btn"} onClick={() => setFwd({ ...fwd, machine: m })} data-testid={`pf-machine-${m}`}>{m}</button>))}</div></div>}
           <div><label className="field-label">Nos (max {num(fwd.step.qty_ready) - num(fwd.step.qty_forwarded)})</label>
             <input type="number" value={fwd.qty} onChange={(e) => setFwd({ ...fwd, qty: e.target.value })} data-testid="pf-fwd-qty" /></div>
-          {fwd.next === "SPARE IN" ? (
-            <div><label className="field-label">Spare item (stock in)</label>
+          {(fwd.next === "SPARE IN" || fwd.next === "FACTORY IN") ? (
+            <div><label className="field-label">{fwd.next === "FACTORY IN" ? "Factory item (stock in)" : "Spare item (stock in)"}</label>
               <select value={fwd.spare_item_id} onChange={(e) => setFwd({ ...fwd, spare_item_id: e.target.value })} data-testid="pf-fwd-spare">
                 <option value="">— choose —</option>
                 {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
