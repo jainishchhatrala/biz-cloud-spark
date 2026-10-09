@@ -113,6 +113,24 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setBusy(false);
   };
 
+  const openEdit = (b) => {
+    const first = steps.find((s) => s.batch_id === b.id && !s.parent_step_id) || steps.find((s) => s.batch_id === b.id);
+    setEditB({
+      ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "",
+      step_id: first?.id || null, step: first?.step || "CUTTING", machine_type: first?.machine_type || "", vendor: first?.vendor || "",
+      size_mm: first?.size_mm ? String(first.size_mm) : "", sheet_mm: first?.sheet_mm ? String(first.sheet_mm) : "", sheet_nos: first?.sheet_nos ? String(first.sheet_nos) : "",
+      new_drawing_data: "", new_drawing_name: "",
+    });
+  };
+
+  const onEditDrawing = (file) => {
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) return toast.error("Drawing must be under 3 MB");
+    const r = new FileReader();
+    r.onload = () => setEditB((s) => ({ ...s, new_drawing_data: r.result, new_drawing_name: file.name }));
+    r.readAsDataURL(file);
+  };
+
   const saveBatchEdit = async () => {
     if (!editB) return;
     if (!editB.part_name.trim()) return toast.error("Part name required");
@@ -122,7 +140,15 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       await run(supabase.from("process_batches").update({
         part_name: editB.part_name.trim(), total_nos: num(editB.total_nos),
         raw_item_id: editB.raw_item_id || null, spare_item_id: editB.spare_item_id || null, notes: editB.notes || null,
+        ...(editB.new_drawing_data ? { drawing_data: editB.new_drawing_data, drawing_name: editB.new_drawing_name } : {}),
       }).eq("id", editB.id));
+      if (editB.step_id) {
+        await run(supabase.from("process_steps").update({
+          step: editB.step, machine_type: editB.step === "MACHINING" ? editB.machine_type || null : null,
+          vendor: editB.vendor || null,
+          size_mm: num(editB.size_mm) || null, sheet_mm: num(editB.sheet_mm) || null, sheet_nos: num(editB.sheet_nos) || null,
+        }).eq("id", editB.step_id));
+      }
       toast.success(`Batch ${editB.number} updated`);
       setEditB(null); await load();
     } catch (e) { toast.error(errMsg(e)); }
