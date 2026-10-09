@@ -156,7 +156,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   };
 
   const deleteBatch = async (b) => {
-    if (!window.confirm(`Batch ${b.number} (${b.part_name}) delete karvu? Aena badha steps pan delete thase.`)) return;
+    if (!window.confirm(`Delete batch ${b.number} (${b.part_name})? All its steps will also be deleted.`)) return;
     setBusy(true);
     try {
       await run(supabase.from("process_steps").delete().eq("batch_id", b.id));
@@ -216,7 +216,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   return (
     <div data-testid="process-flow">
       <div className="pf-toolbar">
-        <p className="subheading">Batch ek pagla par chale — kaam ready thay tyare j aagal kya javu e pasand karo.</p>
+        <p className="subheading">Each batch moves one step at a time — choose the next step only when work is ready.</p>
         <button className="primary-btn" onClick={() => { setF(BLANK); setShow(true); }} data-testid="pf-new-batch"><Plus size={17} /> New batch</button>
       </div>
 
@@ -238,10 +238,10 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                     {(s.machine_type || s.vendor) && <div className="table-sub">{[s.machine_type, s.vendor].filter(Boolean).join(" · ")}</div>}
                     {s.size_mm && <div className="table-sub">Size {s.size_mm} MM</div>}
                     {s.sheet_nos && <div className="table-sub">{s.sheet_nos} sheet · {s.sheet_mm || "?"} MM</div>}
-                    <div className="pf-qty"><span>Ubha {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
+                    <div className="pf-qty"><span>In work {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
                     <div className="pf-actions">
                       {num(s.qty_ready) < num(s.qty_sent) && <button className="ghost-btn" onClick={() => { setReadyM(s); setReadyQty(String(num(s.qty_sent) - num(s.qty_ready))); }} data-testid="pf-ready-btn"><Check size={14} /> Ready</button>}
-                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: NEXT[s.step][0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Aagal <ArrowRight size={14} /></button>}
+                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: NEXT[s.step][0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
                     </div>
                   </div>
                 );
@@ -325,7 +325,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                   : <input value={raw.unit} disabled />}</div>
             </div>
           )}
-          {raw && issueStock > 0 && <p className="table-sub" data-testid="pf-issue-preview">Stock mathi out: <strong>{r2(issueStock)} {raw.unit}</strong> (have {r2(raw.current_stock)})</p>}
+          {raw && issueStock > 0 && <p className="table-sub" data-testid="pf-issue-preview">Stock out: <strong>{r2(issueStock)} {raw.unit}</strong> (in stock {r2(raw.current_stock)})</p>}
           <div className="form-row-2">
             <div><label className="field-label">Vendor / in-house</label><input list="pf-vendors-new" value={f.vendor} onChange={(e) => setF({ ...f, vendor: e.target.value })} />
               <datalist id="pf-vendors-new">{vendorsFor(f.step).concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist></div>
@@ -342,12 +342,12 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
       <Modal show={!!readyM} onClose={() => setReadyM(null)} title={`Ready in ${readyM?.step || ""}`} eyebrow="PROCESS FLOW">
         <div className="form-grid">
-          <div><label className="field-label">Ketla nos ready thaya?</label><input type="number" value={readyQty} onChange={(e) => setReadyQty(e.target.value)} data-testid="pf-ready-qty" /></div>
+          <div><label className="field-label">How many nos are ready?</label><input type="number" value={readyQty} onChange={(e) => setReadyQty(e.target.value)} data-testid="pf-ready-qty" /></div>
           <button className="primary-btn full-btn" onClick={saveReady} data-testid="pf-ready-save"><Check size={17} /> Save</button>
         </div>
       </Modal>
 
-      <Modal show={!!fwd} onClose={() => setFwd(null)} title={`From ${fwd ? label(fwd.step) : ""} — aagal moklo`} eyebrow="PROCESS FLOW">
+      <Modal show={!!fwd} onClose={() => setFwd(null)} title={`From ${fwd ? label(fwd.step) : ""} — send forward`} eyebrow="PROCESS FLOW">
         {fwd && <div className="form-grid">
           <div><label className="field-label">Next step</label>
             <div className="pf-choices">{NEXT[fwd.step.step].map((n) => (
