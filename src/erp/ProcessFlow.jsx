@@ -347,6 +347,29 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         </div>}
       </Modal>
 
+      <Modal show={!!editB} onClose={() => setEditB(null)} title={editB ? `Edit batch ${editB.number}` : ""} eyebrow="PROCESS FLOW">
+        {editB && <div className="form-grid">
+          <div className="form-row-2">
+            <div><label className="field-label">Part name *</label><input value={editB.part_name} onChange={(e) => setEditB({ ...editB, part_name: e.target.value })} data-testid="pf-edit-part" /></div>
+            <div><label className="field-label">Nos (total) *</label><input type="number" value={editB.total_nos} onChange={(e) => setEditB({ ...editB, total_nos: e.target.value })} data-testid="pf-edit-nos" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Raw material</label>
+              <select value={editB.raw_item_id} onChange={(e) => setEditB({ ...editB, raw_item_id: e.target.value })} data-testid="pf-edit-raw">
+                <option value="">— none —</option>
+                {inventory.filter((i) => i.category === "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
+              </select></div>
+            <div><label className="field-label">Final spare item</label>
+              <select value={editB.spare_item_id} onChange={(e) => setEditB({ ...editB, spare_item_id: e.target.value })} data-testid="pf-edit-spare">
+                <option value="">— choose later —</option>
+                {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
+              </select></div>
+          </div>
+          <div><label className="field-label">Notes</label><input value={editB.notes} onChange={(e) => setEditB({ ...editB, notes: e.target.value })} data-testid="pf-edit-notes" /></div>
+          <button className="primary-btn full-btn" disabled={busy} onClick={saveBatchEdit} data-testid="pf-edit-save"><Check size={17} /> Save changes</button>
+        </div>}
+      </Modal>
+
       <Modal show={!!detail} onClose={() => setDetail(null)} title={detail ? `${detail.number} · ${detail.part_name}` : ""} eyebrow="BATCH HISTORY" wide>
         {detail && <div className="form-grid">
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
