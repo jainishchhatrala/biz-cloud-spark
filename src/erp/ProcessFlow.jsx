@@ -113,6 +113,24 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     setBusy(false);
   };
 
+  const openEdit = (b) => {
+    const first = steps.find((s) => s.batch_id === b.id && !s.parent_step_id) || steps.find((s) => s.batch_id === b.id);
+    setEditB({
+      ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "",
+      step_id: first?.id || null, step: first?.step || "CUTTING", machine_type: first?.machine_type || "", vendor: first?.vendor || "",
+      size_mm: first?.size_mm ? String(first.size_mm) : "", sheet_mm: first?.sheet_mm ? String(first.sheet_mm) : "", sheet_nos: first?.sheet_nos ? String(first.sheet_nos) : "",
+      new_drawing_data: "", new_drawing_name: "",
+    });
+  };
+
+  const onEditDrawing = (file) => {
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) return toast.error("Drawing must be under 3 MB");
+    const r = new FileReader();
+    r.onload = () => setEditB((s) => ({ ...s, new_drawing_data: r.result, new_drawing_name: file.name }));
+    r.readAsDataURL(file);
+  };
+
   const saveBatchEdit = async () => {
     if (!editB) return;
     if (!editB.part_name.trim()) return toast.error("Part name required");
@@ -122,7 +140,15 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       await run(supabase.from("process_batches").update({
         part_name: editB.part_name.trim(), total_nos: num(editB.total_nos),
         raw_item_id: editB.raw_item_id || null, spare_item_id: editB.spare_item_id || null, notes: editB.notes || null,
+        ...(editB.new_drawing_data ? { drawing_data: editB.new_drawing_data, drawing_name: editB.new_drawing_name } : {}),
       }).eq("id", editB.id));
+      if (editB.step_id) {
+        await run(supabase.from("process_steps").update({
+          step: editB.step, machine_type: editB.step === "MACHINING" ? editB.machine_type || null : null,
+          vendor: editB.vendor || null,
+          size_mm: num(editB.size_mm) || null, sheet_mm: num(editB.sheet_mm) || null, sheet_nos: num(editB.sheet_nos) || null,
+        }).eq("id", editB.step_id));
+      }
       toast.success(`Batch ${editB.number} updated`);
       setEditB(null); await load();
     } catch (e) { toast.error(errMsg(e)); }
@@ -240,7 +266,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                   <td className={sp >= num(b.total_nos) ? "green-text" : ""}>{sp} / {num(b.total_nos)}</td>
                   <td>{fmtDate(b.created_at)}</td>
                   <td>
-                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); setEditB({ ...b, total_nos: String(num(b.total_nos)), raw_item_id: b.raw_item_id || "", spare_item_id: b.spare_item_id || "", notes: b.notes || "" }); }}><Pencil size={14} /> Edit</button>
+                    <button className="ghost-btn" data-testid={`pf-edit-${b.number}`} onClick={(e) => { e.stopPropagation(); openEdit(b); }}><Pencil size={14} /> Edit</button>
                   </td>
                 </tr>
               );
@@ -365,6 +391,35 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                 {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
               </select></div>
           </div>
+          <div className="form-row-2">
+            <div><label className="field-label">First step</label>
+              <select value={editB.step} onChange={(e) => setEditB({ ...editB, step: e.target.value })} data-testid="pf-edit-step">
+                <option>CUTTING</option><option>LASER CUTTING</option><option>MACHINING</option></select></div>
+            {editB.step === "MACHINING" ? (
+              <div><label className="field-label">Machine</label>
+                <select value={editB.machine_type} onChange={(e) => setEditB({ ...editB, machine_type: e.target.value })} data-testid="pf-edit-machine">
+                  <option value="">— choose —</option>{MACHINES.map((m) => <option key={m}>{m}</option>)}</select></div>
+            ) : (
+              <div><label className="field-label">Vendor / in-house</label>
+                <input list="pf-vendors-edit" value={editB.vendor} onChange={(e) => setEditB({ ...editB, vendor: e.target.value })} data-testid="pf-edit-vendor" />
+                <datalist id="pf-vendors-edit">{vendorsFor(editB.step, editB.machine_type).concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist></div>
+            )}
+          </div>
+          {editB.step === "MACHINING" && (
+            <div><label className="field-label">Vendor / in-house</label>
+              <input list="pf-vendors-edit" value={editB.vendor} onChange={(e) => setEditB({ ...editB, vendor: e.target.value })} data-testid="pf-edit-vendor2" /></div>
+          )}
+          {editB.step === "CUTTING" || editB.step === "MACHINING" ? (
+            <div><label className="field-label">Cut size per piece (MM)</label><input type="number" value={editB.size_mm} onChange={(e) => setEditB({ ...editB, size_mm: e.target.value })} data-testid="pf-edit-size" /></div>
+          ) : (
+            <div className="form-row-2">
+              <div><label className="field-label">Sheet thickness (MM)</label><input type="number" value={editB.sheet_mm} onChange={(e) => setEditB({ ...editB, sheet_mm: e.target.value })} data-testid="pf-edit-sheet-mm" /></div>
+              <div><label className="field-label">Sheets used (nos)</label><input type="number" value={editB.sheet_nos} onChange={(e) => setEditB({ ...editB, sheet_nos: e.target.value })} data-testid="pf-edit-sheet-nos" /></div>
+            </div>
+          )}
+          <div><label className="field-label">Drawing (photo / PDF){editB.drawing_name ? ` — current: ${editB.drawing_name}` : ""}</label>
+            <input type="file" accept="image/*,application/pdf" onChange={(e) => onEditDrawing(e.target.files?.[0])} data-testid="pf-edit-drawing" />
+            {editB.new_drawing_name && <span className="table-sub">New: {editB.new_drawing_name}</span>}</div>
           <div><label className="field-label">Notes</label><input value={editB.notes} onChange={(e) => setEditB({ ...editB, notes: e.target.value })} data-testid="pf-edit-notes" /></div>
           <button className="primary-btn full-btn" disabled={busy} onClick={saveBatchEdit} data-testid="pf-edit-save"><Check size={17} /> Save changes</button>
         </div>}
@@ -373,7 +428,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       <Modal show={!!detail} onClose={() => setDetail(null)} title={detail ? `${detail.number} · ${detail.part_name}` : ""} eyebrow="BATCH HISTORY" wide>
         {detail && <div className="form-grid">
           <div className="pf-actions">
-            <button className="ghost-btn" onClick={() => { setEditB({ ...detail, total_nos: String(num(detail.total_nos)), raw_item_id: detail.raw_item_id || "", spare_item_id: detail.spare_item_id || "", notes: detail.notes || "" }); }} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
+            <button className="ghost-btn" onClick={() => openEdit(detail)} data-testid="pf-detail-edit"><Pencil size={14} /> Edit batch</button>
             <button className="ghost-btn" disabled={busy} onClick={() => deleteBatch(detail)} data-testid="pf-detail-delete"><Trash2 size={14} /> Delete batch</button>
           </div>
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
