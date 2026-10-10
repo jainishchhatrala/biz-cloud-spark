@@ -88,6 +88,8 @@ select.filter-btn{height:36px;padding:0 28px 0 12px;background:#fff url("data:im
 .attention-banner{display:flex;align-items:center;gap:10px;padding:11px 16px;background:linear-gradient(90deg,#fff4e0 0%,#ffe9d6 100%);border:1px solid #f6c58a;border-left:4px solid #e85d1a;border-radius:7px;margin-bottom:16px;cursor:pointer;transition:.18s;font-size:13px;color:#7a4e22}
 .attention-banner:hover{transform:translateY(-1px);box-shadow:0 4px 12px #e85d1a24}
 .attention-banner strong{color:#b45309;font-weight:800}
+.attention-banner-link{cursor:pointer;font-weight:700;text-decoration:underline dotted rgba(180,83,9,.55);text-underline-offset:3px;border-radius:3px}
+.attention-banner-link:hover{color:#9a3f00;background:#ffe1b8}
 .attention-banner svg:first-child{color:#e85d1a}
 .attention-banner svg:last-child{margin-left:auto;color:#8f6134}
 .attention-panel{margin-bottom:14px;border-left:3px solid #d33a36}
