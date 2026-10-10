@@ -233,7 +233,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
         </div>
       </div>
       {(stats?.stale_clients > 0 || stats?.overdue_followups > 0 || stats?.low_stock_count > 0 || stats?.vendor_overdue_count > 0) && (
-        <div className="attention-banner" data-testid="attention-banner" onClick={() => setPage("clients")}>
+        <div className="attention-banner" data-testid="attention-banner" onClick={() => (stats?.low_stock_count > 0 ? setPage("inventory", { low_only: true }) : setPage("clients"))}>
           <Bell size={16} />
           <span>
             <strong>Needs your attention</strong>
@@ -243,7 +243,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
               <span
                 className="attention-banner-link"
                 data-testid="attention-lowstock-link"
-                onClick={e => { e.stopPropagation(); setPage("inventory"); }}
+                onClick={e => { e.stopPropagation(); setPage("inventory", { low_only: true }); }}
                 title="Open inventory"
               > · {stats.low_stock_count} low-stock item{stats.low_stock_count > 1 ? "s" : ""}</span>
             )}
@@ -329,7 +329,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
             <section className="panel attention-panel stock-panel" data-testid="low-stock-panel">
               <div className="panel-head">
                 <div><p className="eyebrow">INVENTORY ALERT</p><h3>Low stock items <span className="count-pill red">{lowStock.length}</span></h3></div>
-                <button className="text-btn" onClick={() => setPage("inventory")} data-testid="low-stock-see-all">Open inventory <ArrowUpRight size={15} /></button>
+                <button className="text-btn" onClick={() => setPage("inventory", { low_only: true })} data-testid="low-stock-see-all">Open inventory <ArrowUpRight size={15} /></button>
               </div>
               <div className="attention-list">
                 {lowStock.map((it, i) => (
@@ -344,7 +344,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
                       <strong className="red-text">{it.current_stock} / {it.min_level} {it.unit}</strong>
                     </div>
                     <div className="attention-actions">
-                      <button className="icon-btn" onClick={() => setPage("inventory")}
+                      <button className="icon-btn" onClick={() => setPage("inventory", { low_only: true })}
                         data-testid={`low-stock-reorder-${i}`} title="Reorder"><Plus size={15} /></button>
                     </div>
                   </div>
