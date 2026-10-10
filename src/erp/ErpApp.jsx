@@ -352,7 +352,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
               </div>
             </section>
           )}
-          {vendorAlerts.length > 0 && (
+          {vendorAlerts.length > 0 && can(user, "jobwork") && (
             <section className="panel attention-panel vendor-panel" data-testid="vendor-alerts-panel">
               <div className="panel-head">
                 <div><p className="eyebrow">VENDOR FOLLOW-UP</p><h3>Overdue vendor deliveries <span className="count-pill red">{vendorAlerts.length}</span></h3></div>
