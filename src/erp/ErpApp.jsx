@@ -232,14 +232,14 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
           {can(user, "quotations") && <button className="primary-btn" onClick={() => setPage("quotations")} data-testid="dashboard-new-quotation-button"><Plus size={17} /> New quotation</button>}
         </div>
       </div>
-      {(stats?.stale_clients > 0 || stats?.overdue_followups > 0 || stats?.low_stock_count > 0 || stats?.vendor_overdue_count > 0) && (
-        <div className="attention-banner" data-testid="attention-banner" onClick={() => (stats?.low_stock_count > 0 ? setPage("inventory", { low_only: true }) : setPage("clients"))}>
+      {(can(user, "inventory") || can(user, "jobwork")) && (stats?.stale_clients > 0 || stats?.overdue_followups > 0 || (stats?.low_stock_count > 0 && can(user, "inventory")) || (stats?.vendor_overdue_count > 0 && can(user, "jobwork"))) && (
+        <div className="attention-banner" data-testid="attention-banner" onClick={() => (stats?.low_stock_count > 0 && can(user, "inventory") ? setPage("inventory", { low_only: true }) : setPage("clients"))}>
           <Bell size={16} />
           <span>
             <strong>Needs your attention</strong>
             {stats?.stale_clients > 0 && ` · ${stats.stale_clients} silent client${stats.stale_clients > 1 ? "s" : ""}`}
             {stats?.overdue_followups > 0 && ` · ${stats.overdue_followups} overdue follow-up${stats.overdue_followups > 1 ? "s" : ""}`}
-            {stats?.low_stock_count > 0 && (
+            {stats?.low_stock_count > 0 && can(user, "inventory") && (
               <span
                 className="attention-banner-link"
                 data-testid="attention-lowstock-link"
@@ -247,7 +247,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
                 title="Open inventory"
               > · {stats.low_stock_count} low-stock item{stats.low_stock_count > 1 ? "s" : ""}</span>
             )}
-            {stats?.vendor_overdue_count > 0 && ` · ${stats.vendor_overdue_count} overdue vendor${stats.vendor_overdue_count > 1 ? "s" : ""}`}
+            {stats?.vendor_overdue_count > 0 && can(user, "jobwork") && ` · ${stats.vendor_overdue_count} overdue vendor${stats.vendor_overdue_count > 1 ? "s" : ""}`}
           </span>
           <ArrowUpRight size={14} />
         </div>
