@@ -837,6 +837,7 @@ export type Database = {
           id: string
           login_id: string
           name: string
+          permissions: Json | null
           phone: string | null
           updated_at: string
         }
@@ -847,6 +848,7 @@ export type Database = {
           id: string
           login_id: string
           name: string
+          permissions?: Json | null
           phone?: string | null
           updated_at?: string
         }
@@ -857,6 +859,7 @@ export type Database = {
           id?: string
           login_id?: string
           name?: string
+          permissions?: Json | null
           phone?: string | null
           updated_at?: string
         }
