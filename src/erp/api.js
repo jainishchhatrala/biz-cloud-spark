@@ -45,7 +45,7 @@ const currentUser = async () => {
     run(supabase.from("user_roles").select("role").eq("user_id", data.user.id)),
   ]);
   if (!p || !p.active) fail("Account inactive or not set up", 401);
-  me = { id: p.id, name: p.name, email: p.email, login_id: p.login_id, role: r?.[0]?.role || "Sales", phone: p.phone, active: p.active };
+  me = { id: p.id, name: p.name, email: p.email, login_id: p.login_id, role: r?.[0]?.role || "Sales", phone: p.phone, active: p.active, permissions: p.permissions || null };
   return me;
 };
 
@@ -578,6 +578,7 @@ export const relTime = (iso) => {
 export const can = (user, moduleId) => {
   if (!user) return false;
   if (user.role === "Admin") return true;
+  if (user.permissions && user.permissions[moduleId]) return !!user.permissions[moduleId].view;
   const map = {
     Sales: ["dashboard", "clients", "followups", "quotations", "orders", "settings"],
     Production: ["dashboard", "orders", "production", "dispatch", "inventory", "jobwork"],
@@ -587,4 +588,10 @@ export const can = (user, moduleId) => {
   };
   return (map[user.role] || []).includes(moduleId);
 };
-export const hidesFinance = (user) => user?.role === "Production" || user?.role === "QC";
+export const canEdit = (user, moduleId) => {
+  if (!user) return false;
+  if (user.role === "Admin") return true;
+  if (user.permissions && user.permissions[moduleId]) return !!user.permissions[moduleId].edit;
+  return can(user, moduleId);
+};
+export const hidesFinance = (user) => (user?.permissions && user.permissions.finance) ? !user.permissions.finance.view : user?.role === "Production" || user?.role === "QC";
