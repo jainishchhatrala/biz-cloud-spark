@@ -323,9 +323,9 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
           </div>
         </section>
       )}
-      {(lowStock.length > 0 || vendorAlerts.length > 0) && (
+      {((lowStock.length > 0 && can(user, "inventory")) || (vendorAlerts.length > 0 && can(user, "jobwork"))) && (
         <div className="dashboard-grid">
-          {lowStock.length > 0 && (
+          {lowStock.length > 0 && can(user, "inventory") && (
             <section className="panel attention-panel stock-panel" data-testid="low-stock-panel">
               <div className="panel-head">
                 <div><p className="eyebrow">INVENTORY ALERT</p><h3>Low stock items <span className="count-pill red">{lowStock.length}</span></h3></div>
