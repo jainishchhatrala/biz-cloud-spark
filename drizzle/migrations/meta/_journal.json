@@ -64,6 +64,20 @@
       "when": 1791552626703,
       "tag": "0008_process_steps_cut_lwh",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791633280926,
+      "tag": "0009_user_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791633306146,
+      "tag": "0010_protect_profile_permissions",
+      "breakpoints": true
     }
   ]
 }

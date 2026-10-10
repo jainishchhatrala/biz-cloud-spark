@@ -19,6 +19,7 @@ const userInput = z.object({
   role: z.enum(ROLES),
   phone: z.string().max(40).nullable().optional(),
   active: z.boolean().default(true),
+  permissions: z.record(z.string(), z.object({ view: z.boolean(), edit: z.boolean().optional() })).nullable().optional(),
 });
 
 export const createErpUser = createServerFn({ method: "POST" })
@@ -34,7 +35,7 @@ export const createErpUser = createServerFn({ method: "POST" })
     });
     if (error || !created.user) throw new Error(error?.message || "Could not create user");
     const id = created.user.id;
-    await supabaseAdmin.from("profiles").insert({ id, name: data.name, email: data.email, login_id: data.login_id, phone: data.phone ?? null, active: data.active });
+    await supabaseAdmin.from("profiles").insert({ id, name: data.name, email: data.email, login_id: data.login_id, phone: data.phone ?? null, active: data.active, permissions: data.permissions ?? null } as any);
     await supabaseAdmin.from("user_roles").insert({ user_id: id, role: data.role });
     return { id, name: data.name, email: data.email, login_id: data.login_id, role: data.role, phone: data.phone ?? null, active: data.active };
   });
@@ -47,7 +48,7 @@ export const updateErpUser = createServerFn({ method: "POST" })
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "Admin" });
     if (!isAdmin && !isSelf) throw new Error("Forbidden");
     const p = data.patch;
-    if (!isAdmin && (p.role || p.active !== undefined || p.login_id)) throw new Error("Only Admin can change role, status or login ID");
+    if (!isAdmin && (p.role || p.permissions !== undefined || p.active !== undefined || p.login_id)) throw new Error("Only Admin can change role, status or login ID");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const authPatch: { email?: string; password?: string } = {};
     if (p.password) authPatch.password = p.password;
@@ -57,7 +58,7 @@ export const updateErpUser = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
     }
     const prof: any = {};
-    for (const k of ["name", "email", "login_id", "phone", "active"] as const) if (p[k] !== undefined) prof[k] = p[k];
+    for (const k of ["name", "email", "login_id", "phone", "active", "permissions"] as const) if (p[k] !== undefined) prof[k] = p[k];
     if (Object.keys(prof).length) await supabaseAdmin.from("profiles").update(prof).eq("id", data.id);
     if (p.role) {
       await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id);

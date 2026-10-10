@@ -2330,6 +2330,40 @@ function JobWorkPage({ user, jobs, inventory, reload }) {
 }
 
 /* ========================= Team ========================= */
+const PERM_MODULES = NAV.flatMap(g => g.items).filter(x => x.id !== "team");
+const roleDefaultPerms = (role) => {
+  const extra = { reports: ["Accountant"], inventory: ["Production"], jobwork: ["Production"], vendors: ["Production"] };
+  const out = {};
+  PERM_MODULES.forEach(m => { const v = can({ role }, m.id) || (extra[m.id] || []).includes(role); out[m.id] = { view: v, edit: v && role !== "QC" }; });
+  out.finance = { view: !hidesFinance({ role }) };
+  return out;
+};
+function PermissionsEditor({ value, onChange }) {
+  const set = (id, k, v) => {
+    const cur = value[id] || { view: false, edit: false };
+    const next = { ...cur, [k]: v };
+    if (k === "view" && !v) next.edit = false;
+    if (k === "edit" && v) next.view = true;
+    onChange({ ...value, [id]: next });
+  };
+  return (
+    <div data-testid="user-permissions">
+      <label className="field-label">Sections this ID can see / edit</label>
+      <div className="table-scroll"><table>
+        <thead><tr><th>Section</th><th>View</th><th>Edit</th></tr></thead>
+        <tbody>
+          {PERM_MODULES.map(m => (
+            <tr key={m.id}><td>{m.label}</td>
+              <td><input type="checkbox" checked={!!value[m.id]?.view} onChange={e => set(m.id, "view", e.target.checked)} data-testid={`perm-view-${m.id}`} /></td>
+              <td><input type="checkbox" checked={!!value[m.id]?.edit} onChange={e => set(m.id, "edit", e.target.checked)} data-testid={`perm-edit-${m.id}`} /></td></tr>
+          ))}
+          <tr><td><strong>Show payment & money amounts</strong></td>
+            <td><input type="checkbox" checked={!!value.finance?.view} onChange={e => onChange({ ...value, finance: { view: e.target.checked } })} data-testid="perm-view-finance" /></td><td></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  );
+}
 function TeamPage({ user, users, reload }) {
   const [show, setShow] = useState(false);
   const [edit, setEdit] = useState(null);
@@ -2340,8 +2374,9 @@ function TeamPage({ user, users, reload }) {
       if (edit) {
         const data = { ...u };
         if (!data.password) delete data.password;
+        if (data.role === "Admin") data.permissions = null;
         await api.updateUser(edit.id, data);
-      } else await api.createUser(u);
+      } else await api.createUser(u.role === "Admin" ? { ...u, permissions: null } : u);
       toast.success("Saved");
       setShow(false); setEdit(null); setU({ name: "", email: "", login_id: "", password: "", role: "Sales", phone: "", active: true });
       await reload();
@@ -2357,7 +2392,7 @@ function TeamPage({ user, users, reload }) {
       <div className="page-heading">
         <div><p className="eyebrow">WORKSPACE ACCESS</p><h1>Team & roles</h1>
           <p className="subheading">Keep the right people in the right parts of the operation.</p></div>
-        {user.role === "Admin" && <button className="primary-btn" onClick={() => { setEdit(null); setU({ name: "", email: "", login_id: "", password: "", role: "Sales", phone: "", active: true }); setShow(true); }} data-testid="team-create-button">
+        {user.role === "Admin" && <button className="primary-btn" onClick={() => { setEdit(null); setU({ name: "", email: "", login_id: "", password: "", role: "Sales", phone: "", active: true, permissions: roleDefaultPerms("Sales") }); setShow(true); }} data-testid="team-create-button">
           <Plus size={17} /> Add team member</button>}
       </div>
       <section className="panel table-panel">
@@ -2375,7 +2410,7 @@ function TeamPage({ user, users, reload }) {
                   <td><Badge tone={usr.role === "Admin" ? "orange" : "blue"}>{usr.role}</Badge></td>
                   <td><Badge tone={usr.active ? "green" : "red"}>{usr.active ? "Active" : "Inactive"}</Badge></td>
                   <td className="row-actions">
-                    {user.role === "Admin" && <button className="icon-btn" onClick={() => { setEdit(usr); setU({ ...usr, password: "" }); setShow(true); }} data-testid={`team-edit-${i}`}><Pencil size={15} /></button>}
+                    {user.role === "Admin" && <button className="icon-btn" onClick={() => { setEdit(usr); setU({ ...usr, password: "", permissions: usr.permissions || roleDefaultPerms(usr.role) }); setShow(true); }} data-testid={`team-edit-${i}`}><Pencil size={15} /></button>}
                     {user.role === "Admin" && usr.id !== user.id && <button className="icon-btn danger" onClick={() => del(usr)} data-testid={`team-delete-${i}`}><Trash2 size={15} /></button>}
                   </td>
                 </tr>
@@ -2402,12 +2437,13 @@ function TeamPage({ user, users, reload }) {
             <div><label className="field-label">{edit ? "New password (leave blank to keep)" : "Password *"}</label>
               <input type="password" value={u.password} onChange={e => setU({ ...u, password: e.target.value })} data-testid="user-password" /></div>
             <div><label className="field-label">Role</label>
-              <select value={u.role} onChange={e => setU({ ...u, role: e.target.value })} data-testid="user-role">
+              <select value={u.role} onChange={e => setU({ ...u, role: e.target.value, permissions: roleDefaultPerms(e.target.value) })} data-testid="user-role">
                 {["Admin", "Sales", "Production", "QC", "Accountant", "Dealer"].map(r => <option key={r}>{r}</option>)}
               </select></div>
           </div>
           <label className="toggle-row"><input type="checkbox" checked={u.active}
             onChange={e => setU({ ...u, active: e.target.checked })} data-testid="user-active" /> Active</label>
+          {u.role !== "Admin" && u.permissions && <PermissionsEditor value={u.permissions} onChange={permissions => setU({ ...u, permissions })} />}
           <button className="primary-btn full-btn" onClick={save} data-testid="save-user-button"><Check size={17} /> Save</button>
         </div>
       </Modal>
@@ -2824,6 +2860,7 @@ export default function App() {
   }
 
   const navAllowed = NAV.map(g => ({ ...g, items: g.items.filter(x =>
+    (user.permissions && user.role !== "Admin") ? (user.permissions[x.id] ? !!user.permissions[x.id].view : can(user, x.id)) :
     can(user, x.id) || (x.id === "team" && user.role === "Admin")
     || (x.id === "products" && user.role === "Admin")
     || (x.id === "settings" && user.role === "Admin")
