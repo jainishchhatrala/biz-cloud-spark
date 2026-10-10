@@ -1511,11 +1511,11 @@ const TXN_LABEL = { IN: "IN", OUT: "OUT", ADJUSTMENT: "ADJUSTMENT", SCRAP: "TO S
 const TXN_SIGN = { IN: "+", OUT: "−", ADJUSTMENT: "=", SCRAP: "−", SCRAP_SALE: "−" };
 const TXN_TONE = { IN: "green", OUT: "red", ADJUSTMENT: "orange", SCRAP: "orange", SCRAP_SALE: "red" };
 
-function InventoryPage({ user, items, txns, reload }) {
+function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
   const [tab, setTab] = useState("items");
   const [txnFilter, setTxnFilter] = useState("");
   const [txnQuery, setTxnQuery] = useState("");
-  const [lowOnly, setLowOnly] = useState(false);
+  const [lowOnly, setLowOnly] = useState(initialLowOnly);
   const [show, setShow] = useState(false);
   const [showTxn, setShowTxn] = useState(false);
   const [edit, setEdit] = useState(null);
@@ -2848,7 +2848,7 @@ export default function App() {
       case "production": return <ProductionPage user={user} orders={orders} reload={reload} setPage={nav} initialOrderId={pageArgs.order_id} />;
       case "dispatch": return <DispatchPage user={user} orders={orders} dispatches={dispatches} reload={reload} />;
       case "payments": return <PaymentsPage user={user} payments={payments} orders={orders} reload={reload} />;
-      case "inventory": return <InventoryPage user={user} items={inventory} txns={invTxns} reload={reload} />;
+      case "inventory": return <InventoryPage key={pageArgs.low_only ? "inv-low" : "inv"} user={user} items={inventory} txns={invTxns} reload={reload} initialLowOnly={!!pageArgs.low_only} />;
       case "jobwork": return <JobWorkPage user={user} jobs={jobs} inventory={inventory} reload={reload} />;
       case "vendors": return <VendorsPage user={user} company={company} />;
       case "team": return <TeamPage user={user} users={users} reload={reload} />;
