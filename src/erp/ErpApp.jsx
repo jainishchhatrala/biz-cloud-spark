@@ -1493,7 +1493,7 @@ function DispatchPage({ user, orders, dispatches, reload }) {
               {dispatches.length === 0 && <tr><td colSpan="9"><Empty msg="No dispatches yet" /></td></tr>}
                {dispatches.map((d, i) => (
                 <tr key={d.id} data-testid={`dispatch-row-${i}`}>
-                  <td><strong className="mono">{d.number}</strong></td>
+                  <td><strong className="mono">{d.number}</strong><br />{d.notes ? <span className="table-sub">{d.notes}</span> : null}</td>
                   <td>{d.order_number || "—"}</td>
                   <td><strong>{d.client_name}</strong></td>
                   <td>{d.item_name || "—"}</td>
