@@ -1721,7 +1721,7 @@ function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
             <div><label className="field-label">Location</label>
               <input value={item.location} onChange={e => setItem({ ...item, location: e.target.value })} data-testid="inv-location" /></div>
           </div>
-          {item.category === "Raw Material" && (
+          {item.category === "Raw Material" && (item.unit === "KG" || Number(item.kg_per_meter) > 0) && (
             <div className="form-row-3">
               <div><label className="field-label">Weight per meter (KG/m)</label>
                 <input type="number" step="0.001" placeholder="e.g. 2.39 for 40x40 2mm" value={item.kg_per_meter ?? ""} onChange={e => setItem({ ...item, kg_per_meter: e.target.value })} data-testid="inv-kpm" /></div>
