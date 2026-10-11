@@ -392,14 +392,6 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
             <div><p className="eyebrow">ORDER PIPELINE</p><h3>Production overview</h3></div>
             <button className="text-btn" onClick={() => setPage("production")} data-testid="production-overview-link">Open production <ArrowUpRight size={15} /></button>
           </div>
-          <div className="stage-bars">
-            {stageCounts.map(({ s, n }, i) => (
-              <div className="stage-item" key={s}>
-                <div><span>{s}</span><strong>{n}</strong></div>
-                <div className="stage-track"><i className={["gray", "blue", "orange", "purple", "green", "red"][i]} style={{ width: `${Math.min(n * 20 + 12, 100)}%` }} /></div>
-              </div>
-            ))}
-          </div>
           {(() => {
             const byCompany = {};
             (orders || []).forEach(o => {
@@ -408,38 +400,38 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
               (o.items || []).forEach((it) => byCompany[c].push(it));
             });
             const names = Object.keys(byCompany).sort();
-            if (!names.length) return null;
-            const sel = names.includes(companyTab) ? companyTab : names[0];
-            const items = byCompany[sel] || [];
+            const allItems = names.flatMap(c => byCompany[c]);
+            const sel = names.includes(companyTab) ? companyTab : "ALL";
+            const items = sel === "ALL" ? allItems : (byCompany[sel] || []);
             const pctOf = (it) => {
               const i = STAGES.indexOf(it?.stage);
               return i < 0 ? 0 : Math.round(i / (STAGES.length - 1) * 100);
             };
             const done = items.filter(it => ["Dispatched", "Delivered"].includes(it?.stage)).length;
             const pct = items.length ? Math.round(items.reduce((s, it) => s + pctOf(it), 0) / items.length) : 0;
+            const counts = STAGES.map(s => ({ s, n: items.filter(it => (it?.stage || "Planning") === s).length }));
             return (
-              <div data-testid="dashboard-company-progress" style={{ marginTop: 14 }}>
-                <p className="eyebrow" style={{ marginBottom: 8 }}>BY COMPANY · WORK COMPLETION</p>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-                  <select value={sel} onChange={e => setCompanyTab(e.target.value)} data-testid="company-progress-select"
-                    style={{ flex: 1, minWidth: 180 }}>
+              <div data-testid="dashboard-company-progress">
+                <div className="pipeline-bar">
+                  <select value={sel} onChange={e => setCompanyTab(e.target.value)} data-testid="company-progress-select" aria-label="Company">
+                    <option value="ALL">All companies</option>
                     {names.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <strong>{pct}% <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 11 }}>({done}/{items.length} dispatched)</span></strong>
+                  <div className="pipeline-stats">
+                    <span><small>Total items of order</small><strong>{items.length}</strong></span>
+                    <span><small>Dispatched</small><strong>{done}/{items.length}</strong></span>
+                    <span><small>Work completion</small><strong>{pct}%</strong></span>
+                  </div>
                 </div>
-                <div className="stage-track" style={{ marginBottom: 10 }}><i className="blue" style={{ width: `${pct}%` }} /></div>
-                <div className="stage-item" style={{ marginBottom: 8 }}>
-                  <div><span>Total items of order</span><strong>{items.length}</strong></div>
-                </div>
-                {stageCounts.map(({ s }, i) => {
-                  const n = items.filter(it => (it?.stage || "Planning") === s).length;
-                  return (
+                <div className="pipeline-progress"><i style={{ width: `${pct}%` }} /></div>
+                <div className="stage-bars">
+                  {counts.map(({ s, n }, i) => (
                     <div className="stage-item" key={s}>
                       <div><span>{s}</span><strong>{n}</strong></div>
                       <div className="stage-track"><i className={["gray", "blue", "orange", "purple", "green", "red"][i]} style={{ width: `${Math.min(n * 20 + 12, 100)}%` }} /></div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             );
           })()}
