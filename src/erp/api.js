@@ -31,7 +31,7 @@ const QUOTE_KEYS = ["number", "client_id", "client_name", "order_date", "valid_u
 const QTPL_KEYS = ["name", "description", "items", "discount", "notes"];
 const ORDER_KEYS = ["number", "quotation_id", "client_id", "client_name", "order_date", "expected_delivery", "dispatch_date", "items", "status", "notes", "dealer_id"];
 const PRODUCT_KEYS = ["name", "model_code", "description", "unit", "default_price", "active"];
-const INV_KEYS = ["sku", "name", "category", "unit", "current_stock", "min_level", "supplier", "location", "kg_per_meter"];
+const INV_KEYS = ["sku", "name", "category", "unit", "current_stock", "min_level", "supplier", "location", "kg_per_meter", "use_in_jobwork"];
 const JW_KEYS = ["number", "vendor", "item", "work_type", "inventory_item_id", "initial_quantity", "quantity_sent", "quantity_received", "stages", "current_stage_index", "send_date", "expected_return", "status", "direction", "process_stage", "images", "next_followup_at", "followup_notes", "notes"];
 const COMPANY_KEYS = ["company_name", "tagline", "address", "phone", "email", "gstin", "website", "logo_data", "terms_html"];
 
