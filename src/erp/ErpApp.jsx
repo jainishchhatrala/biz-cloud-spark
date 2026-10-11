@@ -1281,11 +1281,6 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
               </div>
             ))}
           </div>
-          <div className="detail-meta">
-            <div><small>Target completion</small><strong>{fmtDate(selected.expected_delivery)}</strong></div>
-            <div><small>Quantity</small><strong>{item?.quantity} units</strong></div>
-            <div><small>Progress</small><strong>{item?.progress}%</strong></div>
-          </div>
           <div className="detail-note">
             <strong>Production notes</strong>
             <p>{item?.notes || "No notes yet."}</p>
