@@ -1238,7 +1238,9 @@ function OrdersPage({ user, orders, clients, products, reload, setPage, dispatch
                     <td><div className="progress-cell"><div className="progress-track"><i style={{ width: `${avgProg}%` }} /></div>
                       <span>{avgProg}%</span></div></td>
                     {!hidesFinance(user) && <td><strong>{fmtMoney(total)}</strong></td>}
-                    <td><Badge tone={statusOf(o).startsWith("Partially") ? "purple" : undefined}>{statusOf(o)}</Badge></td>
+                    <td>{tab === "completed"
+                      ? <Badge tone={statusOf(o).startsWith("Partially") ? "purple" : undefined}>{statusOf(o)}</Badge>
+                      : <><Badge>{o.status}</Badge>{dispatchedOf(o).done > 0 && <span className="dispatch-hint">{dispatchedOf(o).done}/{dispatchedOf(o).total} dispatched</span>}</>}</td>
                   </tr>
                 );
               })}
