@@ -34,6 +34,19 @@ export const sheetsNeeded = (pl, pw, sl, sw, nos) => {
   return per ? { per, sheets: Math.ceil(nos / per) } : { per: 0, sheets: null };
 };
 
+const today = () => new Date().toISOString().slice(0, 10);
+const daysLate = (s) => s.expected_return && s.status === "Open" ? Math.floor((Date.parse(today()) - Date.parse(s.expected_return.slice(0, 10))) / 86400000) : 0;
+function DateFields({ v, set }) {
+  return (<>
+    <div className="form-row-3">
+      <div><label className="field-label">Send date</label><input type="date" value={v.sent_date || ""} onChange={(e) => set({ sent_date: e.target.value })} data-testid="pf-sent-date" /></div>
+      <div><label className="field-label">Expected return</label><input type="date" value={v.expected_return || ""} onChange={(e) => set({ expected_return: e.target.value })} data-testid="pf-expected" /></div>
+      <div><label className="field-label">Next follow-up</label><input type="date" value={v.next_followup_at || ""} onChange={(e) => set({ next_followup_at: e.target.value })} data-testid="pf-followup" /></div>
+    </div>
+    <div><label className="field-label">Follow-up notes</label><input value={v.followup_notes || ""} onChange={(e) => set({ followup_notes: e.target.value })} data-testid="pf-followup-notes" /></div>
+  </>);
+}
+const dateCols = (v) => ({ sent_date: v.sent_date || null, expected_return: v.expected_return || null, next_followup_at: v.next_followup_at || null, followup_notes: v.followup_notes || null });
 const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", cut_l: "", cut_w: "", cut_h: "", sheet_mm: "", sheet_nos: "",
   issue_qty: "", issue_unit: "KG", vendor: "", notes: "", drawing_data: "", drawing_name: "", pl: "", pw: "", sl: "2500", sw: "1250" };
 
@@ -49,6 +62,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
   const [editB, setEditB] = useState(null);
   const [busy, setBusy] = useState(false);
   const [fout, setFout] = useState(null);
+  const [fu, setFu] = useState(null);
+  const saveFu = async () => {
+    setBusy(true);
+    try { await run(supabase.from("process_steps").update(dateCols(fu)).eq("id", fu.id)); toast.success("Follow-up saved"); setFu(null); await load(); }
+    catch (e) { toast.error(errMsg(e)); }
+    setBusy(false);
+  };
 
   const load = async () => {
     try {
@@ -118,7 +138,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       await run(supabase.from("process_steps").insert({
         batch_id: batch.id, step: f.step, machine_type: f.machine_type || null, vendor: f.vendor || null, qty_sent: num(f.nos),
         size_mm: num(f.cut_l) || null, cut_l_mm: num(f.cut_l) || null, cut_w_mm: num(f.cut_w) || null, cut_h_mm: num(f.cut_h) || null,
-        sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id,
+        sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id, ...dateCols(f),
       }));
       toast.success(`Batch ${number} started in ${f.step}`);
       setShow(false); setF(BLANK); await load(); reload?.();
@@ -211,7 +231,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       await run(supabase.from("process_steps").insert({
         batch_id: s.batch_id, parent_step_id: s.id, step: fwd.next, machine_type: fwd.next === "MACHINING" ? fwd.machine : null,
         vendor: fwd.vendor || null, qty_sent: qty, qty_ready: spare ? qty : 0, qty_forwarded: spare ? qty : 0,
-        status: spare ? "Done" : "Open", finished_at: spare ? new Date().toISOString() : null, by_user: auth.user?.id,
+        status: spare ? "Done" : "Open", finished_at: spare ? new Date().toISOString() : null, by_user: auth.user?.id, ...(spare ? {} : dateCols(fwd)),
       }));
       const fwdTotal = num(s.qty_forwarded) + qty;
       const done = fwdTotal >= num(s.qty_sent);
@@ -247,7 +267,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       <div className="pf-toolbar">
         <p className="subheading">Each batch moves one step at a time — choose the next step only when work is ready.</p>
         <div style={{ display: "flex", gap: 8 }}><button className="ghost-btn" onClick={() => setFout({ item_id: "", qty: "", machine: "", notes: "" })} data-testid="pf-factory-out">Factory out</button>
-        <button className="primary-btn" onClick={() => { setF(BLANK); setShow(true); }} data-testid="pf-new-batch"><Plus size={17} /> New batch</button></div>
+        <button className="primary-btn" onClick={() => { setF({ ...BLANK, sent_date: today() }); setShow(true); }} data-testid="pf-new-batch"><Plus size={17} /> New batch</button></div>
       </div>
 
       <div className="pf-board" data-testid="pf-board">
@@ -268,10 +288,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                     {(s.machine_type || s.vendor) && <div className="table-sub">{[s.machine_type, s.vendor].filter(Boolean).join(" · ")}</div>}
                     {(s.cut_l_mm || s.cut_w_mm || s.cut_h_mm || s.size_mm) && <div className="table-sub">Size {[s.cut_l_mm || s.size_mm, s.cut_w_mm, s.cut_h_mm].filter(Boolean).join(" × ")} MM</div>}
                     {s.sheet_nos && <div className="table-sub">{s.sheet_nos} sheet · {s.sheet_mm || "?"} MM</div>}
+                    {s.expected_return && <div className="table-sub">Due {fmtDate(s.expected_return)}{daysLate(s) > 0 && <span className="attention-chip stale" style={{ marginLeft: 6 }}>{daysLate(s)} days late</span>}</div>}
+                    {s.next_followup_at && <div className="table-sub">Follow-up {fmtDate(s.next_followup_at)}</div>}
                     <div className="pf-qty"><span>In work {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
                     <div className="pf-actions">
                       {num(s.qty_ready) < num(s.qty_sent) && <button className="ghost-btn" onClick={() => { setReadyM(s); setReadyQty(String(num(s.qty_sent) - num(s.qty_ready))); }} data-testid="pf-ready-btn"><Check size={14} /> Ready</button>}
-                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: nextOf(s.step)[0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
+                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: nextOf(s.step)[0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "", sent_date: today() })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
+                      <button className="ghost-btn" onClick={() => setFu({ id: s.id, sent_date: (s.sent_date || s.started_at || "").slice(0, 10), expected_return: (s.expected_return || "").slice(0, 10), next_followup_at: (s.next_followup_at || "").slice(0, 10), followup_notes: s.followup_notes || "" })} data-testid="pf-fu-btn">Dates</button>
                     </div>
                   </div>
                 );
@@ -280,6 +303,22 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           );
         })}
       </div>
+
+      {(() => {
+        const list = open.filter((s) => s.next_followup_at || s.expected_return).map((s) => ({ s, d: (s.next_followup_at || s.expected_return).slice(0, 10) })).sort((a, b) => a.d.localeCompare(b.d));
+        if (!list.length) return null;
+        return (<section className="panel table-panel" data-testid="pf-followups">
+          <div className="panel-head" style={{ padding: "12px 16px" }}><strong>Job work follow-ups</strong></div>
+          <div className="table-scroll"><table>
+            <thead><tr><th>Batch</th><th>Part</th><th>Step</th><th>Vendor</th><th>Sent</th><th>Expected</th><th>Follow-up</th><th>Status</th></tr></thead>
+            <tbody>{list.map(({ s, d }) => { const b = batchOf(s.batch_id); const late = daysLate(s); const fuDue = s.next_followup_at && s.next_followup_at.slice(0, 10) <= today();
+              return (<tr key={s.id} className={late > 0 ? "row-stale" : fuDue ? "row-overdue" : ""} style={{ cursor: "pointer" }} onClick={() => setFu({ id: s.id, sent_date: (s.sent_date || s.started_at || "").slice(0, 10), expected_return: (s.expected_return || "").slice(0, 10), next_followup_at: (s.next_followup_at || "").slice(0, 10), followup_notes: s.followup_notes || "" })}>
+                <td><strong>{b?.number}</strong></td><td>{b?.part_name}</td><td>{label(s)}</td><td>{s.vendor || "—"}</td>
+                <td>{fmtDate(s.sent_date || s.started_at)}</td><td>{fmtDate(s.expected_return)}</td>
+                <td>{fmtDate(s.next_followup_at)}{s.followup_notes && <div className="table-sub">{s.followup_notes}</div>}</td>
+                <td>{late > 0 ? <span className="attention-chip stale">{late} days late</span> : fuDue ? <span className="attention-chip overdue">Follow-up due</span> : "On time"}</td></tr>); })}</tbody>
+          </table></div></section>);
+      })()}
 
       <section className="panel table-panel">
         <div className="table-scroll"><table>
@@ -371,6 +410,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                 {inventory.filter((i) => i.category !== "Raw Material").map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}</option>)}
               </select></div>
           </div>
+          <DateFields v={f} set={(x) => setF((o) => ({ ...o, ...x }))} />
           <div><label className="field-label">Notes</label><input value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></div>
           <button className="primary-btn full-btn" disabled={busy} onClick={createBatch} data-testid="pf-save"><Check size={17} /> Start batch</button>
         </div>
@@ -387,6 +427,13 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           <div><label className="field-label">Used in which machine (record only)</label><input value={fout.machine} onChange={(e) => setFout({ ...fout, machine: e.target.value })} placeholder="e.g. SM 1200 Cashew Machine" data-testid="pf-fout-machine" /></div>
           <div><label className="field-label">Notes</label><input value={fout.notes} onChange={(e) => setFout({ ...fout, notes: e.target.value })} /></div>
           <button className="primary-btn full-btn" disabled={busy} onClick={doFactoryOut} data-testid="pf-fout-save">Save</button>
+        </div>}
+      </Modal>
+
+      <Modal show={!!fu} onClose={() => setFu(null)} title="Job work dates & follow-up" eyebrow="PROCESS FLOW">
+        {fu && <div className="form-grid">
+          <DateFields v={fu} set={(x) => setFu((o) => ({ ...o, ...x }))} />
+          <button className="primary-btn full-btn" disabled={busy} onClick={saveFu} data-testid="pf-fu-save"><Check size={17} /> Save</button>
         </div>}
       </Modal>
 
@@ -419,6 +466,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
               <datalist id="pf-vendors-fwd">{fwdVendors.concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist>
               {fwdVendors.length > 0 && <span className="table-sub">Suggested: {fwdVendors.join(", ")}</span>}</div>
           )}
+          {fwd.next !== "SPARE IN" && fwd.next !== "FACTORY IN" && <DateFields v={fwd} set={(x) => setFwd((o) => ({ ...o, ...x }))} />}
           <button className="primary-btn full-btn" disabled={busy} onClick={doForward} data-testid="pf-fwd-save"><ArrowRight size={17} /> Send</button>
         </div>}
       </Modal>
@@ -489,10 +537,10 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           </div>
           <p className="table-sub">Total {num(detail.total_nos)} nos{detail.raw_item_id && byId(detail.raw_item_id) ? ` · Raw: ${byId(detail.raw_item_id).name}` : ""}{detail.notes ? ` · ${detail.notes}` : ""}</p>
           {detail.drawing_data && <a className="text-btn" href={detail.drawing_data} download={detail.drawing_name || "drawing"} target="_blank" rel="noreferrer"><FileText size={15} /> {detail.drawing_name || "Drawing"}</a>}
-          <table><thead><tr><th>Step</th><th>Vendor</th><th>Sent</th><th>Ready</th><th>Forwarded</th><th>Status</th><th>Date</th></tr></thead>
+          <table><thead><tr><th>Step</th><th>Vendor</th><th>Sent</th><th>Ready</th><th>Forwarded</th><th>Status</th><th>Sent</th><th>Expected</th><th>Follow-up</th></tr></thead>
             <tbody>{steps.filter((s) => s.batch_id === detail.id).map((s) => (
               <tr key={s.id}><td>{label(s)}</td><td>{s.vendor || "—"}</td><td>{num(s.qty_sent)}</td><td>{num(s.qty_ready)}</td><td>{num(s.qty_forwarded)}</td>
-                <td>{s.status}</td><td>{fmtDate(s.started_at)}</td></tr>))}</tbody></table>
+                <td>{s.status}{daysLate(s) > 0 ? ` · ${daysLate(s)}d late` : ""}</td><td>{fmtDate(s.sent_date || s.started_at)}</td><td>{fmtDate(s.expected_return)}</td><td>{fmtDate(s.next_followup_at)}</td></tr>))}</tbody></table>
         </div>}
       </Modal>
     </div>
