@@ -176,6 +176,39 @@ export const api = {
   },
   deleteUser: (id) => deleteErpUser({ data: { id } }).catch((e) => fail(e.message)),
 
+  // tasks
+  listTasks: () => list("tasks"),
+  createTask: async (b) => {
+    const u = await currentUser();
+    const number = await nextNumber("TSK");
+    return insert("tasks", { number, title: b.title, description: b.description || null, priority: b.priority || "Normal",
+      assigned_to: b.assigned_to, assigned_by: u.id, due_at: b.due_at || null, status: "Assigned", updates: [] });
+  },
+  editTask: (id, b) => update("tasks", id, pick(b, ["title", "description", "priority", "assigned_to", "due_at", "rating"])),
+  deleteTask: (id) => del("tasks", id),
+  acceptTask: async (t) => {
+    const u = await currentUser();
+    return update("tasks", t.id, { status: "Accepted", accepted_at: nowIso(),
+      updates: [...(t.updates || []), { at: nowIso(), by: u.id, by_name: u.name, note: "Task accepted", progress: 0 }] });
+  },
+  addTaskUpdate: async (t, note, progress) => {
+    const u = await currentUser();
+    return update("tasks", t.id, { status: "In Progress",
+      updates: [...(t.updates || []), { at: nowIso(), by: u.id, by_name: u.name, note, progress: Number(progress) || 0 }] });
+  },
+  finishTask: async (t, note) => {
+    const u = await currentUser();
+    const fin = new Date();
+    let rating = 5;
+    if (t.due_at) {
+      const due = new Date(t.due_at.length <= 10 ? t.due_at + "T23:59:59" : t.due_at);
+      const lateDays = (fin - due) / 86400000;
+      rating = lateDays <= 0 ? 5 : lateDays <= 1 ? 4 : lateDays <= 3 ? 3 : lateDays <= 7 ? 2 : 1;
+    }
+    return update("tasks", t.id, { status: "Finished", finished_at: fin.toISOString(), rating,
+      updates: [...(t.updates || []), { at: fin.toISOString(), by: u.id, by_name: u.name, note: note || "Task finished", progress: 100 }] });
+  },
+
   // roles
   listRoles: () => list("role_permissions"),
   updateRole: async (role, modules) => {
@@ -603,6 +636,7 @@ export const can = (user, moduleId) => {
   if (!user) return false;
   if (user.role === "Admin") return true;
   if (user.permissions && user.permissions[moduleId]) return !!user.permissions[moduleId].view;
+  if (moduleId === "tasks") return true;
   const map = {
     Sales: ["dashboard", "clients", "followups", "quotations", "orders", "settings"],
     Production: ["dashboard", "orders", "production", "dispatch", "inventory", "jobwork"],
