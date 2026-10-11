@@ -330,7 +330,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
               <div><label className="field-label">Width (MM)</label><input type="number" value={f.cut_w} onChange={(e) => setF({ ...f, cut_w: e.target.value })} data-testid="pf-cut-w" /></div>
               <div><label className="field-label">Height (MM)</label><input type="number" value={f.cut_h} onChange={(e) => setF({ ...f, cut_h: e.target.value })} data-testid="pf-cut-h" /></div>
             </div>
-          ) : (
+          ) : f.step === "LASER CUTTING" ? (
             <>
               <div className="form-row-2">
                 <div><label className="field-label">Sheet thickness (MM)</label><input type="number" value={f.sheet_mm} onChange={(e) => setF({ ...f, sheet_mm: e.target.value })} data-testid="pf-sheet-mm" /></div>
@@ -348,7 +348,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                 {est && <p className="table-sub" data-testid="pf-est">{est.per ? <>~{est.per} parts per sheet → <strong>{est.sheets} sheets</strong> needed <button className="text-btn" onClick={() => setF({ ...f, sheet_nos: String(est.sheets) })}>use</button></> : "Part bigger than sheet"}</p>}
               </div>
             </>
-          )}
+          ) : null}
           <div><label className="field-label">Drawing (photo / PDF)</label>
             <input type="file" accept="image/*,application/pdf" onChange={(e) => onDrawing(e.target.files?.[0])} data-testid="pf-drawing" />
             {f.drawing_name && <span className="table-sub">{f.drawing_name}</span>}</div>
