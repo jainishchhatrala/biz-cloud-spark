@@ -121,6 +121,7 @@ export type Database = {
       }
       dispatches: {
         Row: {
+          bill_number: string | null
           bilty_number: string | null
           created_at: string
           dispatch_at: string | null
@@ -137,6 +138,7 @@ export type Database = {
           vehicle_number: string | null
         }
         Insert: {
+          bill_number?: string | null
           bilty_number?: string | null
           created_at?: string
           dispatch_at?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           vehicle_number?: string | null
         }
         Update: {
+          bill_number?: string | null
           bilty_number?: string | null
           created_at?: string
           dispatch_at?: string | null
