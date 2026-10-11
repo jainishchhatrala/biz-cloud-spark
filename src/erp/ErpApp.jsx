@@ -1245,6 +1245,9 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const selected = orders.find(o => o.id === selId) || activeOrders[0] || orders[0];
   const [itemIdx, setItemIdx] = useState(0);
   const [notes, setNotes] = useState("");
+  const [dispModal, setDispModal] = useState(false);
+  const [dispForm, setDispForm] = useState({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+  const [busy, setBusy] = useState(false);
   useEffect(() => { setNotes(""); }, [selId, itemIdx]);
   const companies = [...new Set(orders.map(o => o.client_name || "—"))].sort();
   const [company, setCompany] = useState("");
