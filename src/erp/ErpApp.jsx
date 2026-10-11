@@ -7,12 +7,13 @@ import {
   MoreHorizontal, Package, PanelLeftClose, Phone, Plus, Printer, Receipt, Search, Settings,
   ShieldCheck, Truck, UserRound, Users, WalletCards, Wrench, X, Zap, LogOut, Sun, MessageCircle,
   Pencil, Trash2, Download, FileEdit, Building2, Image as ImageIcon, Bold, Italic, List as ListIcon,
-  Pilcrow, Save, UploadCloud,
+  Pilcrow, Save, UploadCloud, ListChecks,
 } from "lucide-react";
 import { api, fmtMoney, fmtDate, fmtDateTime, relTime, can, hidesFinance } from "./api";
 import { openQuotationPrint } from "./print-quotation";
 import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
 import ProcessFlow from "./ProcessFlow";
+import TasksPage, { isLate as taskLate } from "./TasksPage";
 
 /* ========================= Config ========================= */
 const BRAND = { name: "Aalidhra", suffix: " Cashew", tagline: "CASHEW EXPORT ERP" };
@@ -29,6 +30,7 @@ const NAV = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "clients", label: "Clients & CRM", icon: Users },
     { id: "followups", label: "Follow-ups", icon: CalendarDays },
+    { id: "tasks", label: "Tasks", icon: ListChecks },
   ]},
   { label: "Operations", items: [
     { id: "quotations", label: "Quotations", icon: FileText },
@@ -202,7 +204,8 @@ function LoginPage({ onLogin }) {
 }
 
 /* ========================= Dashboard ========================= */
-function Dashboard({ user, setPage, orders, clients, followups, stats, inventory, jobs }) {
+function Dashboard({ user, setPage, orders, clients, followups, stats, inventory, jobs, tasks = [], users = [] }) {
+  const myTasks = tasks.filter(t => t.assigned_to === user.id && t.status !== "Finished");
   const readyItems = useMemo(() => {
     const out = [];
     (orders || []).forEach(o => (o.items || []).forEach((it, idx) => {
@@ -277,6 +280,20 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
               </div>
             ))}
           </div>
+        </section>
+        <section className="panel follow-panel" data-testid="dashboard-tasks-panel">
+          <div className="panel-head">
+            <div><p className="eyebrow">ASSIGNED TO YOU</p><h3>My tasks ({myTasks.length})</h3></div>
+            <button className="icon-btn" onClick={() => setPage("tasks")} data-testid="dashboard-tasks-button"><ListChecks size={17} /></button>
+          </div>
+          {myTasks.length === 0 && <Empty msg="No open tasks" />}
+          {myTasks.slice(0, 5).map((t, i) => (
+            <div className="follow-row" key={t.id} style={{ cursor: "pointer" }} onClick={() => setPage("tasks")} data-testid={`dashboard-task-${i}`}>
+              <div className={`timeline-dot ${taskLate(t) ? "red" : t.status === "Assigned" ? "orange" : "blue"}`} />
+              <div><strong>{t.title}</strong><span>{t.status === "Assigned" ? "Waiting for you to accept" : t.status} · from {users.find(u => u.id === t.assigned_by)?.name || "—"}</span></div>
+              <time>{t.due_at ? fmtDate(t.due_at) : ""}</time>
+            </div>
+          ))}
         </section>
         <section className="panel follow-panel">
           <div className="panel-head">
@@ -3042,6 +3059,7 @@ export default function App() {
   const [jobs, setJobs] = useState([]);
   const [users, setUsers] = useState([]);
   const [followups, setFollowups] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [company, setCompany] = useState({ company_name: "Aalidhra Cashew Export", terms_html: "" });
   const [loaded, setLoaded] = useState(false);
@@ -3051,7 +3069,7 @@ export default function App() {
   const reload = useCallback(async () => {
     if (!user) return;
     try {
-      const [c, o, q, pr, py, d, inv, invTx, jb, us, fu, co, st] = await Promise.all([
+      const [c, o, q, pr, py, d, inv, invTx, jb, us, fu, co, st, tk] = await Promise.all([
         api.listClients().catch(() => []),
         api.listOrders().catch(() => []),
         api.listQuotations().catch(() => []),
@@ -3065,7 +3083,9 @@ export default function App() {
         api.allFollowups().catch(() => []),
         api.getCompany().catch(() => null),
         api.dashboard().catch(() => null),
+        api.listTasks().catch(() => []),
       ]);
+      setTasks(tk);
       setClients(c); setOrders(o); setQuotations(q); setProducts(pr); setPayments(py);
       setDispatches(d); setInventory(inv); setInvTxns(invTx); setJobs(jb); setUsers(us); setFollowups(fu);
       if (co) setCompany(co); if (st) setStats(st);
@@ -3107,7 +3127,8 @@ export default function App() {
     if (selectedClient) return <ClientDetail client={selectedClient}
       onBack={() => setSelectedClient(null)} setPage={nav} reload={reload} />;
     switch (page) {
-      case "dashboard": return <Dashboard user={user} setPage={nav} orders={orders} clients={clients} followups={followups} stats={stats} inventory={inventory} jobs={jobs} />;
+      case "dashboard": return <Dashboard user={user} setPage={nav} orders={orders} clients={clients} followups={followups} stats={stats} inventory={inventory} jobs={jobs} tasks={tasks} users={users} />;
+      case "tasks": return <TasksPage user={user} users={users} tasks={tasks} reload={reload} />;
       case "clients": return <ClientsPage user={user} clients={clients} dealers={dealers} reload={reload} openClient={setSelectedClient} />;
       case "followups": return <FollowupsPage followups={followups} />;
       case "quotations": return <QuotationsPage key={pageArgs.client_id || "q"} user={user} quotations={quotations} clients={clients} products={products} company={company} reload={reload} initialClientId={pageArgs.client_id} />;
@@ -3153,6 +3174,7 @@ export default function App() {
                     onClick={() => nav(item.id)} data-testid={`nav-${item.id}`}>
                     <I size={17} /><span>{item.label}</span>
                     {item.id === "followups" && followups.length > 0 && <b>{followups.length}</b>}
+                    {item.id === "tasks" && tasks.filter(t => t.assigned_to === user.id && t.status !== "Finished").length > 0 && <b>{tasks.filter(t => t.assigned_to === user.id && t.status !== "Finished").length}</b>}
                   </button>
                 );
               })}

@@ -224,3 +224,21 @@ tr.row-overdue td:first-child{box-shadow:inset 3px 0 #e85d1a}
 .pipeline-progress{height:6px;background:#edf0f2;border-radius:10px;overflow:hidden;margin:0 20px 6px}
 .pipeline-progress i{display:block;height:100%;border-radius:10px;background:var(--blue)}
 @media(max-width:640px){.pipeline-stats{gap:12px}}
+
+/* Tasks */
+.task-stars { display: inline-flex; gap: 2px; color: #f59e0b; vertical-align: middle; }
+.task-link { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; text-align: left; font: inherit; }
+.task-link:hover strong { text-decoration: underline; }
+.task-sub { display: block; font-size: 12px; opacity: .65; margin-top: 2px; }
+.task-late { color: #dc2626; font-weight: 600; }
+.task-progress { position: relative; min-width: 110px; height: 8px; border-radius: 99px; background: rgba(120,120,140,.18); }
+.task-progress i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: #f97316; }
+.task-progress span { position: absolute; right: 0; top: 10px; font-size: 12px; opacity: .7; }
+.task-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.primary-btn.small, .ghost-btn.small { padding: 6px 10px; font-size: 13px; }
+.task-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+.task-log { display: grid; gap: 8px; max-height: 280px; overflow: auto; }
+.task-log > div { border-left: 3px solid #f97316; padding: 6px 10px; background: rgba(120,120,140,.07); border-radius: 6px; }
+.task-log time { font-size: 12px; opacity: .65; }
+.task-log p { margin: 2px 0 0; }
+.task-note { font-size: 13px; opacity: .7; padding: 12px 4px 0; }
