@@ -2562,7 +2562,17 @@ function VendorsPage({ user, company }) {
             <div><label className="field-label">Email</label><input value={form.email || ""} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div><label className="field-label">City</label><input value={form.city || ""} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
           </div>
-          <label className="field-label">Services / processes</label><input value={form.services || ""} onChange={e => setForm({ ...form, services: e.target.value })} placeholder="Hardening, Plating..." />
+          <label className="field-label">Services / processes (select all that apply)</label>
+          {(() => {
+            const OPTS = ["PART CUTTING", "LASER CUTTING", "CNC", "VMC", "LATHE", "BENDING", "HARDENING", "NITRIDING", "BLACKODISING", "FABRICATION", "PLATING"];
+            const list = (form.services || "").split(",").map(s => s.trim()).filter(Boolean);
+            const has = (o) => list.some(s => s.toUpperCase() === o);
+            const toggle = (o) => setForm({ ...form, services: (has(o) ? list.filter(s => s.toUpperCase() !== o) : [...list, o]).join(", ") });
+            return <div data-testid="vendor-services" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {OPTS.map(o => <label key={o} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}><input type="checkbox" style={{ width: "auto" }} checked={has(o)} onChange={() => toggle(o)} />{o}</label>)}
+            </div>;
+          })()}
+          <input value={form.services || ""} onChange={e => setForm({ ...form, services: e.target.value })} placeholder="Other services, comma separated" />
           <label className="field-label">Address</label><textarea value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} />
           <label className="field-label">Notes</label><textarea value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
           <button className="primary-btn full-btn" onClick={save}><Check size={17} /> Save</button>
