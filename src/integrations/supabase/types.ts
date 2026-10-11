@@ -1021,6 +1021,68 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          accepted_at: string | null
+          assigned_by: string | null
+          assigned_to: string
+          created_at: string
+          description: string | null
+          due_at: string | null
+          finished_at: string | null
+          id: string
+          number: string
+          priority: string
+          rating: number | null
+          status: string
+          title: string
+          updated_at: string
+          updates: Json
+        }
+        Insert: {
+          accepted_at?: string | null
+          assigned_by?: string | null
+          assigned_to: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          finished_at?: string | null
+          id?: string
+          number: string
+          priority?: string
+          rating?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          updates?: Json
+        }
+        Update: {
+          accepted_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          finished_at?: string | null
+          id?: string
+          number?: string
+          priority?: string
+          rating?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updates?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
