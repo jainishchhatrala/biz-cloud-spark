@@ -388,7 +388,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         {fwd && <div className="form-grid">
           <div><label className="field-label">Next step</label>
             <div className="pf-choices">{NEXT[fwd.step.step].map((n) => (
-              <button key={n} className={fwd.next === n ? "primary-btn" : "ghost-btn"} onClick={() => setFwd({ ...fwd, next: n })} data-testid={`pf-next-${n}`}>{n}</button>))}</div></div>
+              <button key={n} className={fwd.next === n ? "primary-btn" : "ghost-btn"} onClick={() => setFwd({ ...fwd, next: n })} data-testid={`pf-next-${n}`}>{n === "MACHINING" ? "VMC / MACHINING" : n}</button>))}</div></div>
           {fwd.next === "MACHINING" && <div><label className="field-label">Machine</label>
             <div className="pf-choices">{MACHINES.map((m) => (
               <button key={m} className={fwd.machine === m ? "primary-btn" : "ghost-btn"} onClick={() => setFwd({ ...fwd, machine: m })} data-testid={`pf-machine-${m}`}>{m}</button>))}</div></div>}
@@ -431,7 +431,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           <div className="form-row-2">
             <div><label className="field-label">First step</label>
               <select value={editB.step} onChange={(e) => setEditB({ ...editB, step: e.target.value })} data-testid="pf-edit-step">
-                <option>CUTTING</option><option>LASER CUTTING</option><option>MACHINING</option></select></div>
+                <option>CUTTING</option><option>LASER CUTTING</option><option value="MACHINING">VMC / MACHINING</option></select></div>
             {editB.step === "MACHINING" ? (
               <div><label className="field-label">Machine</label>
                 <select value={editB.machine_type} onChange={(e) => setEditB({ ...editB, machine_type: e.target.value })} data-testid="pf-edit-machine">
