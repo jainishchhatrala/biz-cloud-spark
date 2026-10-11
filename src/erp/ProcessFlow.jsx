@@ -262,7 +262,11 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
   const open = steps.filter((s) => s.status === "Open");
   const spareDone = steps.filter((s) => s.step === "SPARE IN");
-  const label = (s) => s.step === "MACHINING" && s.machine_type ? `MACHINING · ${s.machine_type}` : s.step;
+  const label = (s) => {
+    if (!s) return "";
+    if (typeof s === "string") return s === "MACHINING" ? "VMC / MACHINING" : s;
+    return s.step === "MACHINING" && s.machine_type ? `MACHINING · ${s.machine_type}` : (s.step || "");
+  };
   const fwdVendors = fwd ? vendorsFor(fwd.next, fwd.machine) : [];
 
   return (
