@@ -54,7 +54,7 @@ const STAGES = ["In Planning", "Production Started", "Assembly & Wiring", "Testi
 const STATUS_TONES = {
   "Hot": "orange", "Warm": "blue", "Cold": "gray", "Order Won": "green", "Lost": "red",
   "Draft": "gray", "Sent": "blue", "Awaiting response": "orange", "Approved": "green", "Rejected": "red", "Converted": "purple",
-  "In Production": "blue", "Ready for Dispatch": "orange", "Dispatched": "green",
+  "In Production": "blue", "Ready for Dispatch": "orange", "Dispatched": "green", "Partially Dispatched": "purple",
   "Fully Paid": "green", "Partially Paid": "orange", "Unpaid": "red",
   "Pending": "gray", "Material Sent": "blue", "In Process": "orange", "Partially Received": "orange", "Completed": "green", "Cancelled": "red",
 };
@@ -1175,6 +1175,18 @@ function OrdersPage({ user, orders, clients, products, reload, setPage, dispatch
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
   const [show, setShow] = useState(false);
+  const dispatchedOf = (o) => {
+    const total = (o.items || []).length;
+    const done = (o.items || []).filter((it, idx) => ["Dispatched", "Delivered"].includes(it?.stage)
+      || dispatches.some(d => d.order_id === o.id && d.item_index === idx)).length;
+    return { done, total };
+  };
+  const statusOf = (o) => {
+    const { done, total } = dispatchedOf(o);
+    if (o.status === "Dispatched" || (total > 0 && done >= total)) return "Dispatched";
+    if (done > 0) return `Partially Dispatched ${done}/${total}`;
+    return o.status;
+  };
   const filtered = orders.filter(o => {
     if (query && !(o.number + " " + (o.client_name || "")).toLowerCase().includes(query.toLowerCase())) return false;
     if (tab === "production" && o.status !== "In Production") return false;
@@ -1226,7 +1238,9 @@ function OrdersPage({ user, orders, clients, products, reload, setPage, dispatch
                     <td><div className="progress-cell"><div className="progress-track"><i style={{ width: `${avgProg}%` }} /></div>
                       <span>{avgProg}%</span></div></td>
                     {!hidesFinance(user) && <td><strong>{fmtMoney(total)}</strong></td>}
-                    <td><Badge>{o.status}</Badge></td>
+                    <td>{tab === "completed"
+                      ? <Badge tone={statusOf(o).startsWith("Partially") ? "purple" : undefined}>{statusOf(o)}</Badge>
+                      : <><Badge>{o.status}</Badge>{dispatchedOf(o).done > 0 && <span className="dispatch-hint">{dispatchedOf(o).done}/{dispatchedOf(o).total} dispatched</span>}</>}</td>
                   </tr>
                 );
               })}
