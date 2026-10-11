@@ -1272,14 +1272,6 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
           </div>
           <h2>{item?.name}</h2>
           <p className="subheading">{selected.client_name} · {selected.number}</p>
-          {selected.items.length > 1 && (
-            <div className="item-switch">
-              {selected.items.map((it, i) => (
-                <button key={i} className={itemIdx === i ? "active" : ""}
-                  onClick={() => setItemIdx(i)} data-testid={`item-switch-${i}`}>Item {i + 1}: {it.name}</button>
-              ))}
-            </div>
-          )}
           <div className="stepper">
             {STAGES.map((s, i) => (
               <div className={`step ${i <= currentStageIdx ? "done" : ""} ${s === item?.stage ? "current" : ""}`} key={s}
@@ -1288,11 +1280,6 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
                 <span>{s}</span>
               </div>
             ))}
-          </div>
-          <div className="detail-meta">
-            <div><small>Target completion</small><strong>{fmtDate(selected.expected_delivery)}</strong></div>
-            <div><small>Quantity</small><strong>{item?.quantity} units</strong></div>
-            <div><small>Progress</small><strong>{item?.progress}%</strong></div>
           </div>
           <div className="detail-note">
             <strong>Production notes</strong>
