@@ -211,6 +211,7 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
     return out;
   }, [orders]);
   const upcoming = (followups || []).slice(0, 4);
+  const [companyTab, setCompanyTab] = useState("");
   const staleClients = useMemo(() =>
     (clients || []).filter(c => c.is_stale || c.followup_overdue)
       .sort((a, b) => (b.days_since_contact || 0) - (a.days_since_contact || 0))
