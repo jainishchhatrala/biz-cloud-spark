@@ -1171,7 +1171,7 @@ function QuotationsPage({ user, quotations, clients, products, company, reload, 
 }
 
 /* ========================= Orders ========================= */
-function OrdersPage({ user, orders, clients, products, reload, setPage }) {
+function OrdersPage({ user, orders, clients, products, reload, setPage, dispatches = [] }) {
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
   const [show, setShow] = useState(false);
@@ -1179,14 +1179,14 @@ function OrdersPage({ user, orders, clients, products, reload, setPage }) {
     if (query && !(o.number + " " + (o.client_name || "")).toLowerCase().includes(query.toLowerCase())) return false;
     if (tab === "production" && o.status !== "In Production") return false;
     if (tab === "ready" && !(o.items || []).some(i => i.stage === "Ready for Dispatch")) return false;
-    if (tab === "completed" && !(o.status === "Dispatched" || (o.items || []).some(i => ["Dispatched", "Delivered"].includes(i?.stage)))) return false;
+    if (tab === "completed" && !(o.status === "Dispatched" || dispatches.some(d => d.order_id === o.id))) return false;
     return true;
   });
   const counts = {
     all: orders.length,
     production: orders.filter(o => o.status === "In Production").length,
     ready: orders.filter(o => (o.items || []).some(i => i.stage === "Ready for Dispatch")).length,
-    completed: orders.filter(o => o.status === "Dispatched" || (o.items || []).some(i => ["Dispatched", "Delivered"].includes(i?.stage))).length,
+    completed: orders.filter(o => o.status === "Dispatched" || dispatches.some(d => d.order_id === o.id)).length,
   };
   return (
     <div className="page-content" data-testid="page-orders">
@@ -1239,7 +1239,7 @@ function OrdersPage({ user, orders, clients, products, reload, setPage }) {
 }
 
 /* ========================= Production ========================= */
-function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
+function ProductionPage({ user, orders, reload, setPage, initialOrderId, dispatches = [] }) {
   const activeOrders = orders.filter(o => o.status !== "Dispatched");
   const [selId, setSelId] = useState(initialOrderId || (activeOrders[0]?.id || orders[0]?.id));
   const selected = orders.find(o => o.id === selId) || activeOrders[0] || orders[0];
@@ -1252,11 +1252,17 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const companies = [...new Set(orders.map(o => o.client_name || "—"))].sort();
   const [company, setCompany] = useState("");
   const shownOrders = company ? orders.filter(o => (o.client_name || "—") === company) : orders;
-  const isDispatchedItem = (it) => ["Dispatched", "Delivered"].includes(it?.stage);
+  const hasDispatch = (orderId, idx) => dispatches.some(d => d.order_id === orderId && d.item_index === idx);
+  const isDispatchedItem = (o, it, idx) => hasDispatch(o.id, idx) || ["Dispatched", "Delivered"].includes(it?.stage);
   const machineRows = shownOrders.filter(o => o.status !== "Dispatched")
-    .flatMap(o => o.items.map((it, idx) => ({ o, it, idx })).filter(r => !isDispatchedItem(r.it)));
-  const dispatchedRows = shownOrders
-    .flatMap(o => o.items.map((it, idx) => ({ o, it, idx })).filter(r => isDispatchedItem(r.it) || r.o.status === "Dispatched"));
+    .flatMap(o => o.items.map((it, idx) => ({ o, it, idx })).filter(r => !isDispatchedItem(r.o, r.it, r.idx)));
+  const dispatchedRows = dispatches
+    .filter(d => shownOrders.some(o => o.id === d.order_id))
+    .map(d => {
+      const o = orders.find(x => x.id === d.order_id);
+      return o ? { o, it: (o.items || [])[d.item_index] || {}, idx: d.item_index, d } : null;
+    })
+    .filter(Boolean);
   if (!selected) return <div className="page-content" data-testid="page-production"><Empty msg="No orders yet. Create one from a quotation." /></div>;
   const item = selected.items[itemIdx] || selected.items[0];
   const currentStageIdx = STAGES.indexOf(item?.stage || "In Planning");
@@ -3091,8 +3097,8 @@ export default function App() {
       case "clients": return <ClientsPage user={user} clients={clients} dealers={dealers} reload={reload} openClient={setSelectedClient} />;
       case "followups": return <FollowupsPage followups={followups} />;
       case "quotations": return <QuotationsPage key={pageArgs.client_id || "q"} user={user} quotations={quotations} clients={clients} products={products} company={company} reload={reload} initialClientId={pageArgs.client_id} />;
-      case "orders": return <OrdersPage user={user} orders={orders} clients={clients} products={products} reload={reload} setPage={nav} />;
-      case "production": return <ProductionPage user={user} orders={orders} reload={reload} setPage={nav} initialOrderId={pageArgs.order_id} />;
+      case "orders": return <OrdersPage user={user} orders={orders} clients={clients} products={products} reload={reload} setPage={nav} dispatches={dispatches} />;
+      case "production": return <ProductionPage user={user} orders={orders} reload={reload} setPage={nav} initialOrderId={pageArgs.order_id} dispatches={dispatches} />;
       case "dispatch": return <DispatchPage user={user} orders={orders} dispatches={dispatches} reload={reload} />;
       case "payments": return <PaymentsPage user={user} payments={payments} orders={orders} reload={reload} />;
       case "inventory": return <InventoryPage key={pageArgs.low_only ? "inv-low" : "inv"} user={user} items={inventory} txns={invTxns} reload={reload} initialLowOnly={!!pageArgs.low_only} />;
