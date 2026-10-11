@@ -1,0 +1,1 @@
+ALTER TABLE public.process_steps ADD COLUMN IF NOT EXISTS sent_date text, ADD COLUMN IF NOT EXISTS expected_return text, ADD COLUMN IF NOT EXISTS next_followup_at text, ADD COLUMN IF NOT EXISTS followup_notes text;

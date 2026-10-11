@@ -369,7 +369,9 @@ export const api = {
 
   // vendors
   listVendors: async () => {
-    const [vendors, jobs] = await Promise.all([list("vendors", "name", true), list("job_work")]);
+    const [vendors, jobs, pSteps, pBatches] = await Promise.all([list("vendors", "name", true), list("job_work"),
+      supabase.from("process_steps").select("*").not("vendor", "is", null).limit(5000).then((r) => r.data || []),
+      supabase.from("process_batches").select("id, number, part_name").limit(5000).then((r) => r.data || [])]);
     const now = nowIso();
     const key = (s) => (s || "").trim().toLowerCase();
     const map = new Map(vendors.map((v) => [key(v.name), { ...v, registered: true }]));
@@ -378,6 +380,15 @@ export const api = {
       if (!map.has(key(s.vendor))) map.set(key(s.vendor), { id: null, name: s.vendor.trim(), vendor_type: "Job Work", registered: false });
       const v = map.get(key(s.vendor));
       v._stages = [...(v._stages || []), { ...s, job_id: j.id, job_number: j.number, item: j.item }];
+    }
+    const bMap = new Map(pBatches.map((b) => [b.id, b]));
+    for (const s of pSteps) {
+      if (!key(s.vendor) || ["SPARE IN", "FACTORY IN"].includes(s.step)) continue;
+      if (!map.has(key(s.vendor))) map.set(key(s.vendor), { id: null, name: s.vendor.trim(), vendor_type: "Job Work", registered: false });
+      const v = map.get(key(s.vendor)); const b = bMap.get(s.batch_id);
+      v._stages = [...(v._stages || []), { vendor: s.vendor, process: s.machine_type ? `${s.step} · ${s.machine_type}` : s.step,
+        status: s.status === "Done" ? "Completed" : "Open", expected_return: s.expected_return || null, actual_return: s.finished_at || null,
+        quantity_sent: s.qty_sent, quantity_received: s.qty_ready, rejection_quantity: 0, job_id: null, job_number: b?.number, item: b?.part_name }];
     }
     return [...map.values()].map((v) => {
       const st = v._stages || [];
