@@ -101,6 +101,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
   const createBatch = async () => {
     if (!f.part_name.trim()) return toast.error("Part name required");
+    if (!f.step) return toast.error("Type job work name");
     if (!num(f.nos)) return toast.error("Nos required");
     setBusy(true);
     try {
