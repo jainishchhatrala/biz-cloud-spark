@@ -309,7 +309,8 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       <Modal show={show} onClose={() => setShow(false)} title="Start new batch" eyebrow="PROCESS FLOW" wide>
         <div className="form-grid">
           <div className="form-row-2">
-            <div><label className="field-label">Part name *</label><input value={f.part_name} onChange={(e) => setF({ ...f, part_name: e.target.value })} data-testid="pf-part" /></div>
+            <div><label className="field-label">Part name *</label><input list="pf-part-names" value={f.part_name} onChange={(e) => setF({ ...f, part_name: e.target.value })} data-testid="pf-part" />
+              <datalist id="pf-part-names">{[...new Set(batches.map((b) => b.part_name).filter(Boolean))].map((n) => <option key={n} value={n} />)}</datalist></div>
             <div><label className="field-label">Job type</label>
               <select value={f.job || f.step} onChange={(e) => { const job = e.target.value; const r = pickJob(job); setF({ ...f, job, step: r.step, machine_type: r.machine }); }} data-testid="pf-step">
                 {jobTypes.map((j) => <option key={j} value={j}>{j}</option>)}<option value="OTHERS">OTHERS</option></select>
