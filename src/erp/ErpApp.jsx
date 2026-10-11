@@ -1434,19 +1434,43 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
 /* ========================= Dispatch ========================= */
 function DispatchPage({ user, orders, dispatches, reload }) {
   const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
+  const emptyForm = { order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" };
+  const [form, setForm] = useState(emptyForm);
+  const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
   const readyOrders = orders.filter(o => (o.items || []).some(i => i.stage === "Ready for Dispatch"));
-  const create = async () => {
+   const create = async () => {
     if (!form.order_id || !form.vehicle_number) { toast.error("Order & vehicle number required"); return; }
     setBusy(true);
     try {
       await api.createDispatch({ ...form, dispatch_at: new Date().toISOString() });
       toast.success("Dispatch created");
       setShow(false);
-      setForm({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
+      setForm(emptyForm);
       await reload();
     } catch { toast.error("Create failed"); } finally { setBusy(false); }
+   };
+  const openEdit = (d) => {
+    setEditing(d);
+    setForm({ order_id: d.order_id, item_index: d.item_index, vehicle_number: d.vehicle_number || "", transporter: d.transporter || "", driver_name: d.driver_name || "", driver_phone: d.driver_phone || "", bilty_number: d.bilty_number || "", bill_number: d.bill_number || "", notes: d.notes || "" });
+  };
+  const saveEdit = async () => {
+    if (!form.vehicle_number) { toast.error("Vehicle number required"); return; }
+    setBusy(true);
+    try {
+      await api.updateDispatch(editing.id, form);
+      toast.success("Dispatch updated");
+      setEditing(null);
+      await reload();
+    } catch { toast.error("Update failed"); } finally { setBusy(false); }
+  };
+  const removeDispatch = async (d) => {
+    if (!window.confirm(`Delete dispatch ${d.number}? Item will go back to Ready for Dispatch.`)) return;
+    try {
+      await api.deleteDispatch(d.id);
+      toast.success("Dispatch deleted");
+      await reload();
+    } catch { toast.error("Delete failed"); }
   };
   return (
     <div className="page-content" data-testid="page-dispatch">
