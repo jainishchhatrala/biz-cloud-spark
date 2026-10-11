@@ -1179,14 +1179,14 @@ function OrdersPage({ user, orders, clients, products, reload, setPage }) {
     if (query && !(o.number + " " + (o.client_name || "")).toLowerCase().includes(query.toLowerCase())) return false;
     if (tab === "production" && o.status !== "In Production") return false;
     if (tab === "ready" && !(o.items || []).some(i => i.stage === "Ready for Dispatch")) return false;
-    if (tab === "completed" && o.status !== "Dispatched") return false;
+    if (tab === "completed" && !(o.status === "Dispatched" || (o.items || []).some(i => ["Dispatched", "Delivered"].includes(i?.stage)))) return false;
     return true;
   });
   const counts = {
     all: orders.length,
     production: orders.filter(o => o.status === "In Production").length,
     ready: orders.filter(o => (o.items || []).some(i => i.stage === "Ready for Dispatch")).length,
-    completed: orders.filter(o => o.status === "Dispatched").length,
+    completed: orders.filter(o => o.status === "Dispatched" || (o.items || []).some(i => ["Dispatched", "Delivered"].includes(i?.stage))).length,
   };
   return (
     <div className="page-content" data-testid="page-orders">
