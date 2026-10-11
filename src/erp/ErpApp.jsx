@@ -1211,10 +1211,14 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const [itemIdx, setItemIdx] = useState(0);
   const [notes, setNotes] = useState("");
   useEffect(() => { setNotes(""); }, [selId, itemIdx]);
-  const companies = [...new Set(activeOrders.map(o => o.client_name || "—"))].sort();
+  const companies = [...new Set(orders.map(o => o.client_name || "—"))].sort();
   const [company, setCompany] = useState("");
-  const shownOrders = company ? activeOrders.filter(o => (o.client_name || "—") === company) : activeOrders;
-  const machineRows = shownOrders.flatMap(o => o.items.map((it, idx) => ({ o, it, idx })));
+  const shownOrders = company ? orders.filter(o => (o.client_name || "—") === company) : orders;
+  const isDispatchedItem = (it) => ["Dispatched", "Delivered"].includes(it?.stage);
+  const machineRows = shownOrders.filter(o => o.status !== "Dispatched")
+    .flatMap(o => o.items.map((it, idx) => ({ o, it, idx })).filter(r => !isDispatchedItem(r.it)));
+  const dispatchedRows = shownOrders
+    .flatMap(o => o.items.map((it, idx) => ({ o, it, idx })).filter(r => isDispatchedItem(r.it) || r.o.status === "Dispatched"));
   if (!selected) return <div className="page-content" data-testid="page-production"><Empty msg="No orders yet. Create one from a quotation." /></div>;
   const item = selected.items[itemIdx] || selected.items[0];
   const currentStageIdx = STAGES.indexOf(item?.stage || "In Planning");
