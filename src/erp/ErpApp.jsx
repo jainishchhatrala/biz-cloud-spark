@@ -1261,14 +1261,40 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const item = selected.items[itemIdx] || selected.items[0];
   const currentStageIdx = STAGES.indexOf(item?.stage || "In Planning");
 
-  const advance = async (toStage) => {
+  const advance = (toStage) => {
+    if (toStage === "Dispatched") {
+      setDispForm(f => ({ ...f, dispatch_at: f.dispatch_at || new Date().toISOString().slice(0, 10) }));
+      setDispModal(true);
+      return;
+    }
     const stageIdx = STAGES.indexOf(toStage);
     const progress = Math.round(((stageIdx + 1) / STAGES.length) * 100);
+    api.updateStage(selected.id, { item_index: itemIdx, stage: toStage, progress, notes })
+      .then(async () => { toast.success(`Stage updated → ${toStage}`); setNotes(""); await reload(); })
+      .catch(() => toast.error("Update failed"));
+  };
+
+  const submitDispatch = async () => {
+    if (!dispForm.vehicle_number) { toast.error("Vehicle number required"); return; }
+    setBusy(true);
     try {
-      await api.updateStage(selected.id, { item_index: itemIdx, stage: toStage, progress, notes });
-      toast.success(`Stage updated → ${toStage}`);
-      setNotes(""); await reload();
-    } catch { toast.error("Update failed"); }
+      await api.createDispatch({
+        order_id: selected.id,
+        item_index: itemIdx,
+        dispatch_at: dispForm.dispatch_at ? new Date(dispForm.dispatch_at).toISOString() : new Date().toISOString(),
+        vehicle_number: dispForm.vehicle_number,
+        transporter: dispForm.transporter,
+        driver_name: dispForm.driver_name,
+        driver_phone: dispForm.driver_phone,
+        bilty_number: dispForm.bilty_number,
+        notes: dispForm.notes || notes || "",
+      });
+      toast.success(`Dispatched · ${selected.number}`);
+      setDispModal(false);
+      setDispForm({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+      setNotes("");
+      await reload();
+    } catch { toast.error("Dispatch failed"); } finally { setBusy(false); }
   };
 
   return (
