@@ -215,3 +215,12 @@ tr.row-overdue td:first-child{box-shadow:inset 3px 0 #e85d1a}
 .pf-datebox input[type=date]{padding:8px 8px;font-size:13px}
 .pf-datebox .field-label{display:block;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:560px){.pf-date-grid{grid-template-columns:1fr}}
+.pipeline-bar{display:flex;align-items:center;gap:14px;padding:0 20px 12px;flex-wrap:wrap}
+.pipeline-bar select{flex:1;min-width:180px;height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0 10px;font-size:13px;font-weight:700;color:var(--ink);outline:0}
+.pipeline-bar select:focus{border-color:#f9a86b}
+.pipeline-stats{display:flex;gap:18px;align-items:center}
+.pipeline-stats span{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#909ba5}
+.pipeline-stats strong{font-size:13px;color:var(--ink)}
+.pipeline-progress{height:6px;background:#edf0f2;border-radius:10px;overflow:hidden;margin:0 20px 6px}
+.pipeline-progress i{display:block;height:100%;border-radius:10px;background:var(--blue)}
+@media(max-width:640px){.pipeline-stats{gap:12px}}
