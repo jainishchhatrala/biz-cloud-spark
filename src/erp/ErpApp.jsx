@@ -1560,6 +1560,39 @@ function DispatchPage({ user, orders, dispatches, reload }) {
             <Check size={17} /> {busy ? "Saving..." : "Create dispatch"}</button>
         </div>
       </Modal>
+      <Modal show={!!editing} onClose={() => setEditing(null)} title={`Edit dispatch · ${editing?.number || ""}`} wide>
+        <div className="form-grid">
+          <div className="form-row-2">
+            <div><label className="field-label">Vehicle number *</label>
+              <input value={form.vehicle_number} onChange={e => setForm({ ...form, vehicle_number: e.target.value })}
+                placeholder="GJ-01-AB-1234" data-testid="edit-dispatch-vehicle" /></div>
+            <div><label className="field-label">Transporter</label>
+              <input value={form.transporter} onChange={e => setForm({ ...form, transporter: e.target.value })}
+                data-testid="edit-dispatch-transporter" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Driver name</label>
+              <input value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
+                data-testid="edit-dispatch-driver-name" /></div>
+            <div><label className="field-label">Driver phone</label>
+              <input value={form.driver_phone} onChange={e => setForm({ ...form, driver_phone: e.target.value })}
+                data-testid="edit-dispatch-driver-phone" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Bill number</label>
+              <input value={form.bill_number} onChange={e => setForm({ ...form, bill_number: e.target.value })}
+                placeholder="Invoice / bill no" data-testid="edit-dispatch-bill" /></div>
+            <div><label className="field-label">Bilty / LR number</label>
+              <input value={form.bilty_number} onChange={e => setForm({ ...form, bilty_number: e.target.value })}
+                placeholder="If bilty available" data-testid="edit-dispatch-bilty" /></div>
+          </div>
+          <div><label className="field-label">Notes</label>
+            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+              data-testid="edit-dispatch-notes" /></div>
+          <button className="primary-btn full-btn" onClick={saveEdit} disabled={busy} data-testid="update-dispatch-button">
+            <Check size={17} /> {busy ? "Saving..." : "Save changes"}</button>
+        </div>
+      </Modal>
     </div>
   );
 }
