@@ -348,7 +348,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                 {est && <p className="table-sub" data-testid="pf-est">{est.per ? <>~{est.per} parts per sheet → <strong>{est.sheets} sheets</strong> needed <button className="text-btn" onClick={() => setF({ ...f, sheet_nos: String(est.sheets) })}>use</button></> : "Part bigger than sheet"}</p>}
               </div>
             </>
-          )}
+          ) : null}
           <div><label className="field-label">Drawing (photo / PDF)</label>
             <input type="file" accept="image/*,application/pdf" onChange={(e) => onDrawing(e.target.files?.[0])} data-testid="pf-drawing" />
             {f.drawing_name && <span className="table-sub">{f.drawing_name}</span>}</div>
