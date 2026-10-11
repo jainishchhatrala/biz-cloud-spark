@@ -208,3 +208,10 @@ tr.row-overdue td:first-child{box-shadow:inset 3px 0 #e85d1a}
 .pf-datebox-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--ink-2,#6b655c);text-transform:uppercase;letter-spacing:.04em}
 .pf-datebox textarea{width:100%;resize:vertical;font:inherit;padding:8px 10px;border:1px solid var(--line,#e5e0d8);border-radius:8px;background:#fff}
 .pf-fu-context{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pf-datebox{box-sizing:border-box;width:100%;min-width:0}
+.pf-date-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.pf-date-grid>div{min-width:0}
+.pf-datebox input[type=date],.pf-datebox textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;margin:0}
+.pf-datebox input[type=date]{padding:8px 8px;font-size:13px}
+.pf-datebox .field-label{display:block;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:560px){.pf-date-grid{grid-template-columns:1fr}}
