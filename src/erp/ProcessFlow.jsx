@@ -435,6 +435,11 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
 
       <Modal show={!!fu} onClose={() => setFu(null)} title="Job work dates & follow-up" eyebrow="PROCESS FLOW">
         {fu && <div className="form-grid">
+          <div className="pf-fu-context">
+            <span className="badge">{label(fu.step)}</span>
+            {fu.machine_type && <span className="badge">{fu.machine_type}</span>}
+            {fu.vendor && <span className="table-sub">{fu.vendor}</span>}
+          </div>
           <DateFields v={fu} set={(x) => setFu((o) => ({ ...o, ...x }))} />
           <button className="primary-btn full-btn" disabled={busy} onClick={saveFu} data-testid="pf-fu-save"><Check size={17} /> Save</button>
         </div>}
