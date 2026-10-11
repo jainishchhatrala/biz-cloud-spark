@@ -1,0 +1,2 @@
+CREATE POLICY "dispatches update" ON public.dispatches FOR UPDATE TO authenticated USING (has_perm('dispatch','edit')) WITH CHECK (has_perm('dispatch','edit'));
+CREATE POLICY "dispatches delete" ON public.dispatches FOR DELETE TO authenticated USING (has_perm('dispatch','edit'));
