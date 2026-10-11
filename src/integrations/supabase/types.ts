@@ -670,14 +670,18 @@ export type Database = {
           cut_h_mm: number | null
           cut_l_mm: number | null
           cut_w_mm: number | null
+          expected_return: string | null
           finished_at: string | null
+          followup_notes: string | null
           id: string
           machine_type: string | null
+          next_followup_at: string | null
           notes: string | null
           parent_step_id: string | null
           qty_forwarded: number
           qty_ready: number
           qty_sent: number
+          sent_date: string | null
           sheet_mm: number | null
           sheet_nos: number | null
           size_mm: number | null
@@ -694,14 +698,18 @@ export type Database = {
           cut_h_mm?: number | null
           cut_l_mm?: number | null
           cut_w_mm?: number | null
+          expected_return?: string | null
           finished_at?: string | null
+          followup_notes?: string | null
           id?: string
           machine_type?: string | null
+          next_followup_at?: string | null
           notes?: string | null
           parent_step_id?: string | null
           qty_forwarded?: number
           qty_ready?: number
           qty_sent?: number
+          sent_date?: string | null
           sheet_mm?: number | null
           sheet_nos?: number | null
           size_mm?: number | null
@@ -718,14 +726,18 @@ export type Database = {
           cut_h_mm?: number | null
           cut_l_mm?: number | null
           cut_w_mm?: number | null
+          expected_return?: string | null
           finished_at?: string | null
+          followup_notes?: string | null
           id?: string
           machine_type?: string | null
+          next_followup_at?: string | null
           notes?: string | null
           parent_step_id?: string | null
           qty_forwarded?: number
           qty_ready?: number
           qty_sent?: number
+          sent_date?: string | null
           sheet_mm?: number | null
           sheet_nos?: number | null
           size_mm?: number | null
