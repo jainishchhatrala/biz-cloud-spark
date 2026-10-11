@@ -246,7 +246,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           const ready = cards.reduce((a, s) => a + num(s.qty_ready) - num(s.qty_forwarded), 0);
           return (
             <div className="pf-col" key={st} data-testid={`pf-col-${st}`}>
-              <div className="pf-col-head"><strong>{st}</strong><span>{inWork} in work · {ready} ready</span></div>
+              <div className="pf-col-head"><strong>{st === "MACHINING" ? "VMC / MACHINING" : st}</strong><span>{inWork} in work · {ready} ready</span></div>
               {cards.length === 0 && <p className="table-sub">—</p>}
               {cards.map((s) => {
                 const b = batchOf(s.batch_id); const avail = num(s.qty_ready) - num(s.qty_forwarded);
