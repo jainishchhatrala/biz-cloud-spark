@@ -218,7 +218,6 @@ function Dashboard({ user, setPage, orders, clients, followups, stats, inventory
       .slice(0, 5), [clients]);
   const lowStock = useMemo(() => (inventory || []).filter(i => (i.current_stock || 0) < (i.min_level || 0)).slice(0, 6), [inventory]);
   const vendorAlerts = useMemo(() => (jobs || []).filter(j => j.is_overdue).slice(0, 6), [jobs]);
-  const stageCounts = STAGES.map(s => ({ s, n: (orders || []).reduce((a, o) => a + (o.items || []).filter(i => i.stage === s).length, 0) }));
 
   return (
     <div className="page-content" data-testid="page-dashboard">
