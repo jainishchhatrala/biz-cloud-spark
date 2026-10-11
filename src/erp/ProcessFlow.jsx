@@ -16,6 +16,8 @@ export const NEXT = {
   BLACKODISING: ["SPARE IN", "FACTORY IN"],
 };
 const MACHINES = ["CNC", "VMC", "LATHE"];
+const NEXT_DEFAULT = ["MACHINING", "BENDING", "HARDENING", "NITRIDING", "BLACKODISING", "SPARE IN", "FACTORY IN"];
+const nextOf = (st) => NEXT[st] || NEXT_DEFAULT;
 const MM_PER_FT = 304.8;
 const isRawConv = (it) => !!it && it.category === "Raw Material" && Number(it.kg_per_meter) > 0;
 const toKg = (q, unit, kpm) => unit === "MM" ? (q / 1000) * kpm : unit === "FT" ? (q * MM_PER_FT / 1000) * kpm : q;
@@ -66,6 +68,14 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
     return vendorList.filter((v) => v.active !== false && keys.some((k) => `${v.services || ""} ${v.vendor_type || ""}`.toLowerCase().includes(k))).map((v) => v.name);
   };
   const raw = byId(f.raw_item_id);
+  const jobTypes = useMemo(() => {
+    const extra = [];
+    vendorList.forEach((v) => (v.services || "").split(",").forEach((x) => { x = x.trim().toUpperCase(); if (x) extra.push(x); }));
+    steps.forEach((x) => { if (x.step && !["SPARE IN", "FACTORY IN"].includes(x.step)) extra.push(x.step); });
+    const base = ["CUTTING", "LASER CUTTING", ...MACHINES, "BENDING", "HARDENING", "NITRIDING", "BLACKODISING"];
+    return [...new Set([...base, ...extra.filter((x) => x !== "MACHINING" && x !== "PART CUTTING")])];
+  }, [vendorList, steps]);
+  const pickJob = (job) => MACHINES.includes(job) ? { step: "MACHINING", machine: job } : job === "OTHERS" ? { step: (f.other || "").trim().toUpperCase(), machine: null } : { step: job, machine: null };
 
   // auto-fill issue quantity from size × nos (cutting) or sheet nos (laser)
   const autoIssue = useMemo(() => {
@@ -105,7 +115,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           reference_number: number, party: f.vendor, remarks: `Issued for ${f.step} – ${f.part_name}` });
       }
       await run(supabase.from("process_steps").insert({
-        batch_id: batch.id, step: f.step, vendor: f.vendor || null, qty_sent: num(f.nos),
+        batch_id: batch.id, step: f.step, machine_type: f.machine_type || null, vendor: f.vendor || null, qty_sent: num(f.nos),
         size_mm: num(f.cut_l) || null, cut_l_mm: num(f.cut_l) || null, cut_w_mm: num(f.cut_w) || null, cut_h_mm: num(f.cut_h) || null,
         sheet_mm: num(f.sheet_mm) || null, sheet_nos: num(f.sheet_nos) || null, by_user: auth.user?.id,
       }));
@@ -240,7 +250,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       </div>
 
       <div className="pf-board" data-testid="pf-board">
-        {STEPS.map((st) => {
+        {[...STEPS, ...new Set(open.map((s) => s.step).filter((x) => !STEPS.includes(x)))].map((st) => {
           const cards = open.filter((s) => s.step === st);
           const inWork = cards.reduce((a, s) => a + num(s.qty_sent) - num(s.qty_ready), 0);
           const ready = cards.reduce((a, s) => a + num(s.qty_ready) - num(s.qty_forwarded), 0);
@@ -260,7 +270,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
                     <div className="pf-qty"><span>In work {num(s.qty_sent) - num(s.qty_ready)}</span><span className="green-text">Ready {avail}</span></div>
                     <div className="pf-actions">
                       {num(s.qty_ready) < num(s.qty_sent) && <button className="ghost-btn" onClick={() => { setReadyM(s); setReadyQty(String(num(s.qty_sent) - num(s.qty_ready))); }} data-testid="pf-ready-btn"><Check size={14} /> Ready</button>}
-                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: NEXT[s.step][0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
+                      {avail > 0 && <button className="primary-btn" onClick={() => setFwd({ step: s, next: nextOf(s.step)[0], qty: String(avail), machine: "", vendor: "", spare_item_id: b?.spare_item_id || "" })} data-testid="pf-forward-btn">Forward <ArrowRight size={14} /></button>}
                     </div>
                   </div>
                 );
@@ -299,9 +309,10 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
         <div className="form-grid">
           <div className="form-row-2">
             <div><label className="field-label">Part name *</label><input value={f.part_name} onChange={(e) => setF({ ...f, part_name: e.target.value })} data-testid="pf-part" /></div>
-            <div><label className="field-label">First step</label>
-              <select value={f.step} onChange={(e) => setF({ ...f, step: e.target.value })} data-testid="pf-step">
-                <option>CUTTING</option><option>LASER CUTTING</option></select></div>
+            <div><label className="field-label">Job type</label>
+              <select value={f.job || f.step} onChange={(e) => { const job = e.target.value; const r = pickJob(job); setF({ ...f, job, step: r.step, machine_type: r.machine }); }} data-testid="pf-step">
+                {jobTypes.map((j) => <option key={j} value={j}>{j}</option>)}<option value="OTHERS">OTHERS</option></select>
+              {f.job === "OTHERS" && <input style={{ marginTop: 6 }} placeholder="Type job work name" value={f.other || ""} onChange={(e) => setF({ ...f, other: e.target.value, step: e.target.value.trim().toUpperCase(), machine_type: null })} data-testid="pf-step-other" />}</div>
           </div>
           <div className="form-row-2">
             <div><label className="field-label">Raw material (stock out)</label>
@@ -351,7 +362,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
           {raw && issueStock > 0 && <p className="table-sub" data-testid="pf-issue-preview">Stock out: <strong>{r2(issueStock)} {raw.unit}</strong> (in stock {r2(raw.current_stock)})</p>}
           <div className="form-row-2">
             <div><label className="field-label">Vendor / in-house</label><input list="pf-vendors-new" value={f.vendor} onChange={(e) => setF({ ...f, vendor: e.target.value })} />
-              <datalist id="pf-vendors-new">{vendorsFor(f.step).concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist></div>
+              <datalist id="pf-vendors-new">{vendorsFor(f.step, f.machine_type).concat(vendorList.map((v) => v.name)).filter((v, i, a) => a.indexOf(v) === i).map((v) => <option key={v} value={v} />)}</datalist></div>
             <div><label className="field-label">Final spare item (for spare in)</label>
               <select value={f.spare_item_id} onChange={(e) => setF({ ...f, spare_item_id: e.target.value })} data-testid="pf-spare">
                 <option value="">— choose later —</option>
@@ -387,7 +398,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
       <Modal show={!!fwd} onClose={() => setFwd(null)} title={`From ${fwd ? label(fwd.step) : ""} — send forward`} eyebrow="PROCESS FLOW">
         {fwd && <div className="form-grid">
           <div><label className="field-label">Next step</label>
-            <div className="pf-choices">{NEXT[fwd.step.step].map((n) => (
+            <div className="pf-choices">{nextOf(fwd.step.step).map((n) => (
               <button key={n} className={fwd.next === n ? "primary-btn" : "ghost-btn"} onClick={() => setFwd({ ...fwd, next: n })} data-testid={`pf-next-${n}`}>{n === "MACHINING" ? "VMC / MACHINING" : n}</button>))}</div></div>
           {fwd.next === "MACHINING" && <div><label className="field-label">Machine</label>
             <div className="pf-choices">{MACHINES.map((m) => (
