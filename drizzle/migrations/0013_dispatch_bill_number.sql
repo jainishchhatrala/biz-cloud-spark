@@ -1,0 +1,1 @@
+alter table public.dispatches add column if not exists bill_number text default '';

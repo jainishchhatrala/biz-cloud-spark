@@ -1246,7 +1246,7 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const [itemIdx, setItemIdx] = useState(0);
   const [notes, setNotes] = useState("");
   const [dispModal, setDispModal] = useState(false);
-  const [dispForm, setDispForm] = useState({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+  const [dispForm, setDispForm] = useState({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
   const [busy, setBusy] = useState(false);
   useEffect(() => { setNotes(""); }, [selId, itemIdx]);
   const companies = [...new Set(orders.map(o => o.client_name || "—"))].sort();
@@ -1287,11 +1287,12 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
         driver_name: dispForm.driver_name,
         driver_phone: dispForm.driver_phone,
         bilty_number: dispForm.bilty_number,
+        bill_number: dispForm.bill_number,
         notes: dispForm.notes || notes || "",
       });
       toast.success(`Dispatched · ${selected.number}`);
       setDispModal(false);
-      setDispForm({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+      setDispForm({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
       setNotes("");
       await reload();
     } catch { toast.error("Dispatch failed"); } finally { setBusy(false); }
@@ -1401,9 +1402,15 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
             <div><label className="field-label">Transporter</label>
               <input value={dispForm.transporter} onChange={e => setDispForm({ ...dispForm, transporter: e.target.value })}
                 data-testid="production-dispatch-transporter" /></div>
-            <div><label className="field-label">Bill / Bilty number</label>
+            <div><label className="field-label">Bill number</label>
+              <input value={dispForm.bill_number} onChange={e => setDispForm({ ...dispForm, bill_number: e.target.value })}
+                placeholder="Invoice / bill no" data-testid="production-dispatch-bill" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Bilty / LR number</label>
               <input value={dispForm.bilty_number} onChange={e => setDispForm({ ...dispForm, bilty_number: e.target.value })}
-                data-testid="production-dispatch-bilty" /></div>
+                placeholder="If bilty available" data-testid="production-dispatch-bilty" /></div>
+            <div></div>
           </div>
           <div className="form-row-2">
             <div><label className="field-label">Driver name</label>
@@ -1427,7 +1434,7 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
 /* ========================= Dispatch ========================= */
 function DispatchPage({ user, orders, dispatches, reload }) {
   const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+  const [form, setForm] = useState({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
   const [busy, setBusy] = useState(false);
   const readyOrders = orders.filter(o => (o.items || []).some(i => i.stage === "Ready for Dispatch"));
   const create = async () => {
@@ -1437,7 +1444,7 @@ function DispatchPage({ user, orders, dispatches, reload }) {
       await api.createDispatch({ ...form, dispatch_at: new Date().toISOString() });
       toast.success("Dispatch created");
       setShow(false);
-      setForm({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+      setForm({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
       await reload();
     } catch { toast.error("Create failed"); } finally { setBusy(false); }
   };
@@ -1457,7 +1464,7 @@ function DispatchPage({ user, orders, dispatches, reload }) {
       <section className="panel table-panel">
         <div className="table-scroll">
           <table>
-            <thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bilty</th></tr></thead>
+            <thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bill / Bilty</th></tr></thead>
             <tbody>
               {dispatches.length === 0 && <tr><td colSpan="8"><Empty msg="No dispatches yet" /></td></tr>}
               {dispatches.map((d, i) => (
@@ -1469,7 +1476,7 @@ function DispatchPage({ user, orders, dispatches, reload }) {
                   <td>{fmtDateTime(d.dispatch_at)}</td>
                   <td>{d.vehicle_number}<br /><span className="table-sub">{d.transporter}</span></td>
                   <td>{d.driver_name}<br /><span className="table-sub">{d.driver_phone}</span></td>
-                  <td>{d.bilty_number}</td>
+                  <td>{d.bill_number || "—"}<br /><span className="table-sub">{d.bilty_number ? `Bilty: ${d.bilty_number}` : ""}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -1510,9 +1517,14 @@ function DispatchPage({ user, orders, dispatches, reload }) {
               <input value={form.driver_phone} onChange={e => setForm({ ...form, driver_phone: e.target.value })}
                 data-testid="dispatch-driver-phone" /></div>
           </div>
-          <div><label className="field-label">Bilty / LR number</label>
-            <input value={form.bilty_number} onChange={e => setForm({ ...form, bilty_number: e.target.value })}
-              data-testid="dispatch-bilty" /></div>
+          <div className="form-row-2">
+            <div><label className="field-label">Bill number</label>
+              <input value={form.bill_number} onChange={e => setForm({ ...form, bill_number: e.target.value })}
+                placeholder="Invoice / bill no" data-testid="dispatch-bill" /></div>
+            <div><label className="field-label">Bilty / LR number</label>
+              <input value={form.bilty_number} onChange={e => setForm({ ...form, bilty_number: e.target.value })}
+                placeholder="If bilty available" data-testid="dispatch-bilty" /></div>
+          </div>
           <div><label className="field-label">Notes</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
               data-testid="dispatch-notes" /></div>

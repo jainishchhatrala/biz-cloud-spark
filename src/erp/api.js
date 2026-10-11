@@ -306,7 +306,7 @@ export const api = {
     });
   },
   createDispatch: async (b) => {
-    const row = pick(b, ["number", "order_id", "item_index", "dispatch_at", "vehicle_number", "transporter", "driver_name", "driver_phone", "bilty_number", "notes", "status"]);
+    const row = pick(b, ["number", "order_id", "item_index", "dispatch_at", "vehicle_number", "transporter", "driver_name", "driver_phone", "bilty_number", "bill_number", "notes", "status"]);
     row.item_index = Number(row.item_index || 0);
     row.number = row.number || (await nextNumber("DSP"));
     row.dispatch_at = row.dispatch_at || nowIso();
