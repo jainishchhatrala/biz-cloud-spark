@@ -1721,9 +1721,9 @@ function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
             <div><label className="field-label">Location</label>
               <input value={item.location} onChange={e => setItem({ ...item, location: e.target.value })} data-testid="inv-location" /></div>
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            <input type="checkbox" checked={!!item.use_in_jobwork} onChange={e => setItem({ ...item, use_in_jobwork: e.target.checked })} data-testid="inv-use-jobwork" />
-            <span>Use this material in job work / machining process (shows in Process flow lists)</span>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 12px", border: "1px solid var(--border, #e5e7eb)", borderRadius: 8, background: item.use_in_jobwork ? "var(--accent-soft, #fff7ed)" : "transparent" }}>
+            <input type="checkbox" style={{ width: 16, height: 16, margin: 0, flexShrink: 0, accentColor: "#f97316" }} checked={!!item.use_in_jobwork} onChange={e => setItem({ ...item, use_in_jobwork: e.target.checked })} data-testid="inv-use-jobwork" />
+            <span style={{ lineHeight: 1.35 }}>Use this material in job work / machining process<br /><span className="table-sub">Shows in Process flow material lists</span></span>
           </label>
           {item.category === "Raw Material" && (item.unit === "KG" || Number(item.kg_per_meter) > 0) && (
             <div className="form-row-3">
