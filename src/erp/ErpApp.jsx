@@ -1488,10 +1488,10 @@ function DispatchPage({ user, orders, dispatches, reload }) {
       <section className="panel table-panel">
         <div className="table-scroll">
           <table>
-            <thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bill / Bilty</th></tr></thead>
+<thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bill / Bilty</th><th></th></tr></thead>
             <tbody>
-              {dispatches.length === 0 && <tr><td colSpan="8"><Empty msg="No dispatches yet" /></td></tr>}
-              {dispatches.map((d, i) => (
+              {dispatches.length === 0 && <tr><td colSpan="9"><Empty msg="No dispatches yet" /></td></tr>}
+               {dispatches.map((d, i) => (
                 <tr key={d.id} data-testid={`dispatch-row-${i}`}>
                   <td><strong className="mono">{d.number}</strong></td>
                   <td>{d.order_number || "—"}</td>
@@ -1501,7 +1501,11 @@ function DispatchPage({ user, orders, dispatches, reload }) {
                   <td>{d.vehicle_number}<br /><span className="table-sub">{d.transporter}</span></td>
                   <td>{d.driver_name}<br /><span className="table-sub">{d.driver_phone}</span></td>
                   <td>{d.bill_number || "—"}<br /><span className="table-sub">{d.bilty_number ? `Bilty: ${d.bilty_number}` : ""}</span></td>
-                </tr>
+                  <td className="row-actions">
+                    <button className="icon-btn" title="Edit" onClick={() => openEdit(d)} data-testid={`dispatch-edit-${i}`}><Pencil size={15} /></button>
+                    <button className="icon-btn danger" title="Delete" onClick={() => removeDispatch(d)} data-testid={`dispatch-delete-${i}`}><Trash2 size={15} /></button>
+                  </td>
+                 </tr>
               ))}
             </tbody>
           </table>
