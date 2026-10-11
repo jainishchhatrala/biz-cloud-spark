@@ -330,7 +330,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
               <div><label className="field-label">Width (MM)</label><input type="number" value={f.cut_w} onChange={(e) => setF({ ...f, cut_w: e.target.value })} data-testid="pf-cut-w" /></div>
               <div><label className="field-label">Height (MM)</label><input type="number" value={f.cut_h} onChange={(e) => setF({ ...f, cut_h: e.target.value })} data-testid="pf-cut-h" /></div>
             </div>
-          ) : (
+          ) : f.step === "LASER CUTTING" ? (
             <>
               <div className="form-row-2">
                 <div><label className="field-label">Sheet thickness (MM)</label><input type="number" value={f.sheet_mm} onChange={(e) => setF({ ...f, sheet_mm: e.target.value })} data-testid="pf-sheet-mm" /></div>
