@@ -2547,6 +2547,7 @@ function VendorsPage({ user, company }) {
                     {(v.whatsapp || v.phone) && <a className="icon-btn" href={waLink(v, company)} target="_blank" rel="noreferrer" title="WhatsApp status request"><MessageCircle size={15} /></a>}
                     {v.email && <a className="icon-btn" href={mailLink(v, company)} title="Email status request"><FileText size={15} /></a>}
                     <button className="icon-btn" onClick={() => setForm(v.registered ? { ...VENDOR_BLANK, ...v } : { ...VENDOR_BLANK, name: v.name })} title="Edit"><Pencil size={15} /></button>
+                    {v.registered && user.role === "Admin" && <button className="icon-btn danger" onClick={() => remove(v)} title="Delete" data-testid={`vendor-delete-${i}`}><Trash2 size={15} /></button>}
                   </td>
                 </tr>
               ))}
