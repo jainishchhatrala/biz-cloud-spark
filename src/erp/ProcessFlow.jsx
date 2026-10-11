@@ -40,7 +40,7 @@ function DateFields({ v, set }) {
   return (
     <div className="pf-datebox">
       <div className="pf-datebox-head"><CalendarDays size={16} /><span>Dates & follow-up</span></div>
-      <div className="form-row-3">
+      <div className="pf-date-grid">
         <div><label className="field-label">Send date</label><input type="date" value={v.sent_date || ""} onChange={(e) => set({ sent_date: e.target.value })} data-testid="pf-sent-date" /></div>
         <div><label className="field-label">Expected return</label><input type="date" value={v.expected_return || ""} onChange={(e) => set({ expected_return: e.target.value })} data-testid="pf-expected" /></div>
         <div><label className="field-label">Next follow-up</label><input type="date" value={v.next_followup_at || ""} onChange={(e) => set({ next_followup_at: e.target.value })} data-testid="pf-followup" /></div>
