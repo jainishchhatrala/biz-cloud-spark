@@ -262,6 +262,7 @@ export type Database = {
           supplier: string | null
           unit: string
           updated_at: string
+          use_in_jobwork: boolean
         }
         Insert: {
           category?: string
@@ -278,6 +279,7 @@ export type Database = {
           supplier?: string | null
           unit?: string
           updated_at?: string
+          use_in_jobwork?: boolean
         }
         Update: {
           category?: string
@@ -294,6 +296,7 @@ export type Database = {
           supplier?: string | null
           unit?: string
           updated_at?: string
+          use_in_jobwork?: boolean
         }
         Relationships: []
       }
