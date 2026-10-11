@@ -37,14 +37,17 @@ export const sheetsNeeded = (pl, pw, sl, sw, nos) => {
 const today = () => new Date().toISOString().slice(0, 10);
 const daysLate = (s) => s.expected_return && s.status === "Open" ? Math.floor((Date.parse(today()) - Date.parse(s.expected_return.slice(0, 10))) / 86400000) : 0;
 function DateFields({ v, set }) {
-  return (<>
-    <div className="form-row-3">
-      <div><label className="field-label">Send date</label><input type="date" value={v.sent_date || ""} onChange={(e) => set({ sent_date: e.target.value })} data-testid="pf-sent-date" /></div>
-      <div><label className="field-label">Expected return</label><input type="date" value={v.expected_return || ""} onChange={(e) => set({ expected_return: e.target.value })} data-testid="pf-expected" /></div>
-      <div><label className="field-label">Next follow-up</label><input type="date" value={v.next_followup_at || ""} onChange={(e) => set({ next_followup_at: e.target.value })} data-testid="pf-followup" /></div>
+  return (
+    <div className="pf-datebox">
+      <div className="pf-datebox-head"><CalendarDays size={16} /><span>Dates & follow-up</span></div>
+      <div className="form-row-3">
+        <div><label className="field-label">Send date</label><input type="date" value={v.sent_date || ""} onChange={(e) => set({ sent_date: e.target.value })} data-testid="pf-sent-date" /></div>
+        <div><label className="field-label">Expected return</label><input type="date" value={v.expected_return || ""} onChange={(e) => set({ expected_return: e.target.value })} data-testid="pf-expected" /></div>
+        <div><label className="field-label">Next follow-up</label><input type="date" value={v.next_followup_at || ""} onChange={(e) => set({ next_followup_at: e.target.value })} data-testid="pf-followup" /></div>
+      </div>
+      <div><label className="field-label">Follow-up notes</label><textarea rows={2} value={v.followup_notes || ""} onChange={(e) => set({ followup_notes: e.target.value })} placeholder="e.g. Called vendor, promised by Friday" data-testid="pf-followup-notes" /></div>
     </div>
-    <div><label className="field-label">Follow-up notes</label><input value={v.followup_notes || ""} onChange={(e) => set({ followup_notes: e.target.value })} data-testid="pf-followup-notes" /></div>
-  </>);
+  );
 }
 const dateCols = (v) => ({ sent_date: v.sent_date || null, expected_return: v.expected_return || null, next_followup_at: v.next_followup_at || null, followup_notes: v.followup_notes || null });
 const BLANK = { part_name: "", step: "CUTTING", raw_item_id: "", spare_item_id: "", nos: "", size_mm: "", cut_l: "", cut_w: "", cut_h: "", sheet_mm: "", sheet_nos: "",
