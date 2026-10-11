@@ -1268,7 +1268,23 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
               </button>
             );
           })}
-          {activeOrders.length === 0 && <Empty msg="All orders dispatched" />}
+          {machineRows.length === 0 && <Empty msg="No active machines for this company" />}
+          {dispatchedRows.length > 0 && (
+            <div data-testid="production-dispatched-list">
+              <div className="panel-head" style={{ marginTop: 8 }}><div><p className="eyebrow">DISPATCHED · {dispatchedRows.length.toString().padStart(2, "0")}</p>
+                <h3>Dispatched list</h3></div></div>
+              {dispatchedRows.map(({ o, it, idx }) => (
+                <div className="production-row" key={"disp-" + o.id + "-" + idx} style={{ cursor: "default", opacity: 0.75 }}
+                  data-testid={`production-dispatched-${o.number}-${idx}`}>
+                  <div className="machine-thumb"><Check size={18} /></div>
+                  <div className="production-info"><strong>{it.name}</strong>
+                    <span>{o.number} · {o.client_name} · Item {idx + 1}</span></div>
+                  <div className="production-percent"><strong>100%</strong>
+                    <span>{it.stage || o.status}</span></div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
         <section className="panel production-detail">
           <div className="detail-kicker"><Badge>{item?.stage}</Badge>
