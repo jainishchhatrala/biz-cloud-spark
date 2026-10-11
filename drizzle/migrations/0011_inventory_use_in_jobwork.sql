@@ -1,0 +1,2 @@
+ALTER TABLE public.inventory_items ADD COLUMN use_in_jobwork boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.inventory_items.use_in_jobwork IS 'When true, this item appears in Process flow / job work material lists (stock-in dropdowns).';

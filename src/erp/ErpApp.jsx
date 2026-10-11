@@ -1721,6 +1721,10 @@ function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
             <div><label className="field-label">Location</label>
               <input value={item.location} onChange={e => setItem({ ...item, location: e.target.value })} data-testid="inv-location" /></div>
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            <input type="checkbox" checked={!!item.use_in_jobwork} onChange={e => setItem({ ...item, use_in_jobwork: e.target.checked })} data-testid="inv-use-jobwork" />
+            <span>Use this material in job work / machining process (shows in Process flow lists)</span>
+          </label>
           {item.category === "Raw Material" && (item.unit === "KG" || Number(item.kg_per_meter) > 0) && (
             <div className="form-row-3">
               <div><label className="field-label">Weight per meter (KG/m)</label>

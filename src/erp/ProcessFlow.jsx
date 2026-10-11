@@ -410,7 +410,7 @@ export default function ProcessFlow({ Modal, inventory, vendorList, reload }) {
             <div><label className="field-label">{fwd.next === "FACTORY IN" ? "Factory item (stock in)" : "Spare item (stock in)"}</label>
               <select value={fwd.spare_item_id} onChange={(e) => setFwd({ ...fwd, spare_item_id: e.target.value })} data-testid="pf-fwd-spare">
                 <option value="">— choose —</option>
-                {inventory.map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}{i.category === "Raw Material" ? " (Raw)" : ""}</option>)}
+                {inventory.filter((i) => i.category !== "Raw Material" || i.use_in_jobwork).map((i) => <option key={i.id} value={i.id}>{i.sku} · {i.name}{i.category === "Raw Material" ? " (Raw)" : ""}</option>)}
               </select></div>
           ) : (
             <div><label className="field-label">Vendor / in-house</label>
