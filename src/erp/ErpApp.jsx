@@ -1712,11 +1712,16 @@ function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
                 {["Raw Material", "Spare Part", "Finished Machine"].map(c => <option key={c}>{c}</option>)}
               </select></div>
             <div><label className="field-label">Unit</label>
-              <input value={item.unit} onChange={e => setItem({ ...item, unit: e.target.value })} data-testid="inv-unit" /></div>
+              <select value={["KG", "NOS", "PCS"].includes(item.unit) ? item.unit : "OTHER"} onChange={e => setItem({ ...item, unit: e.target.value === "OTHER" ? "" : e.target.value })} data-testid="inv-unit">
+                <option value="KG">KG</option><option value="NOS">NOS</option><option value="PCS">PCS</option>
+                <option value="OTHER">Other…</option>
+                {!["KG", "NOS", "PCS", ""].includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
+              </select>
+              {item.unit === "" && <input style={{ marginTop: 6 }} placeholder="Type unit (e.g. LTR, MTR)" value={item.unit} onChange={e => setItem({ ...item, unit: e.target.value })} data-testid="inv-unit-other" />}</div>
             <div><label className="field-label">Location</label>
               <input value={item.location} onChange={e => setItem({ ...item, location: e.target.value })} data-testid="inv-location" /></div>
           </div>
-          {item.category === "Raw Material" && (
+          {item.category === "Raw Material" && (item.unit === "KG" || Number(item.kg_per_meter) > 0) && (
             <div className="form-row-3">
               <div><label className="field-label">Weight per meter (KG/m)</label>
                 <input type="number" step="0.001" placeholder="e.g. 2.39 for 40x40 2mm" value={item.kg_per_meter ?? ""} onChange={e => setItem({ ...item, kg_per_meter: e.target.value })} data-testid="inv-kpm" /></div>
