@@ -1245,6 +1245,9 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const selected = orders.find(o => o.id === selId) || activeOrders[0] || orders[0];
   const [itemIdx, setItemIdx] = useState(0);
   const [notes, setNotes] = useState("");
+  const [dispModal, setDispModal] = useState(false);
+  const [dispForm, setDispForm] = useState({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+  const [busy, setBusy] = useState(false);
   useEffect(() => { setNotes(""); }, [selId, itemIdx]);
   const companies = [...new Set(orders.map(o => o.client_name || "—"))].sort();
   const [company, setCompany] = useState("");
@@ -1258,14 +1261,40 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const item = selected.items[itemIdx] || selected.items[0];
   const currentStageIdx = STAGES.indexOf(item?.stage || "In Planning");
 
-  const advance = async (toStage) => {
+  const advance = (toStage) => {
+    if (toStage === "Dispatched") {
+      setDispForm(f => ({ ...f, dispatch_at: f.dispatch_at || new Date().toISOString().slice(0, 10) }));
+      setDispModal(true);
+      return;
+    }
     const stageIdx = STAGES.indexOf(toStage);
     const progress = Math.round(((stageIdx + 1) / STAGES.length) * 100);
+    api.updateStage(selected.id, { item_index: itemIdx, stage: toStage, progress, notes })
+      .then(async () => { toast.success(`Stage updated → ${toStage}`); setNotes(""); await reload(); })
+      .catch(() => toast.error("Update failed"));
+  };
+
+  const submitDispatch = async () => {
+    if (!dispForm.vehicle_number) { toast.error("Vehicle number required"); return; }
+    setBusy(true);
     try {
-      await api.updateStage(selected.id, { item_index: itemIdx, stage: toStage, progress, notes });
-      toast.success(`Stage updated → ${toStage}`);
-      setNotes(""); await reload();
-    } catch { toast.error("Update failed"); }
+      await api.createDispatch({
+        order_id: selected.id,
+        item_index: itemIdx,
+        dispatch_at: dispForm.dispatch_at ? new Date(dispForm.dispatch_at).toISOString() : new Date().toISOString(),
+        vehicle_number: dispForm.vehicle_number,
+        transporter: dispForm.transporter,
+        driver_name: dispForm.driver_name,
+        driver_phone: dispForm.driver_phone,
+        bilty_number: dispForm.bilty_number,
+        notes: dispForm.notes || notes || "",
+      });
+      toast.success(`Dispatched · ${selected.number}`);
+      setDispModal(false);
+      setDispForm({ dispatch_at: "", vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", notes: "" });
+      setNotes("");
+      await reload();
+    } catch { toast.error("Dispatch failed"); } finally { setBusy(false); }
   };
 
   return (
@@ -1357,6 +1386,40 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
           )}
         </section>
       </div>
+      <Modal show={dispModal} onClose={() => setDispModal(false)} title={`Dispatch details · ${item?.name || ""}`} wide>
+        <div className="form-grid">
+          <p style={{ margin: 0, opacity: 0.75 }}>{selected.client_name} · {selected.number} · Item {itemIdx + 1}</p>
+          <div className="form-row-2">
+            <div><label className="field-label">Dispatch date</label>
+              <input type="date" value={dispForm.dispatch_at} onChange={e => setDispForm({ ...dispForm, dispatch_at: e.target.value })}
+                data-testid="production-dispatch-date" /></div>
+            <div><label className="field-label">Vehicle number *</label>
+              <input value={dispForm.vehicle_number} onChange={e => setDispForm({ ...dispForm, vehicle_number: e.target.value })}
+                placeholder="GJ-01-AB-1234" data-testid="production-dispatch-vehicle" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Transporter</label>
+              <input value={dispForm.transporter} onChange={e => setDispForm({ ...dispForm, transporter: e.target.value })}
+                data-testid="production-dispatch-transporter" /></div>
+            <div><label className="field-label">Bill / Bilty number</label>
+              <input value={dispForm.bilty_number} onChange={e => setDispForm({ ...dispForm, bilty_number: e.target.value })}
+                data-testid="production-dispatch-bilty" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Driver name</label>
+              <input value={dispForm.driver_name} onChange={e => setDispForm({ ...dispForm, driver_name: e.target.value })}
+                data-testid="production-dispatch-driver" /></div>
+            <div><label className="field-label">Driver phone</label>
+              <input value={dispForm.driver_phone} onChange={e => setDispForm({ ...dispForm, driver_phone: e.target.value })}
+                data-testid="production-dispatch-driver-phone" /></div>
+          </div>
+          <div><label className="field-label">Notes</label>
+            <textarea value={dispForm.notes} onChange={e => setDispForm({ ...dispForm, notes: e.target.value })}
+              placeholder={notes || "e.g. Sent with transporter..."} data-testid="production-dispatch-notes" /></div>
+          <button className="primary-btn full-btn" onClick={submitDispatch} disabled={busy} data-testid="production-dispatch-submit">
+            <Check size={17} /> {busy ? "Saving..." : "Mark dispatched"}</button>
+        </div>
+      </Modal>
     </div>
   );
 }
