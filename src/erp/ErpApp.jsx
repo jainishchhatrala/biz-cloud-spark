@@ -1210,7 +1210,11 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
   const selected = orders.find(o => o.id === selId) || activeOrders[0] || orders[0];
   const [itemIdx, setItemIdx] = useState(0);
   const [notes, setNotes] = useState("");
-  useEffect(() => { setItemIdx(0); setNotes(""); }, [selId]);
+  useEffect(() => { setNotes(""); }, [selId, itemIdx]);
+  const companies = [...new Set(activeOrders.map(o => o.client_name || "—"))].sort();
+  const [company, setCompany] = useState("");
+  const shownOrders = company ? activeOrders.filter(o => (o.client_name || "—") === company) : activeOrders;
+  const machineRows = shownOrders.flatMap(o => o.items.map((it, idx) => ({ o, it, idx })));
   if (!selected) return <div className="page-content" data-testid="page-production"><Empty msg="No orders yet. Create one from a quotation." /></div>;
   const item = selected.items[itemIdx] || selected.items[0];
   const currentStageIdx = STAGES.indexOf(item?.stage || "In Planning");
@@ -1235,19 +1239,27 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
       <div className="production-layout">
         <section className="panel production-board">
           <div className="panel-head"><div><p className="eyebrow">ACTIVE JOBS · {activeOrders.length.toString().padStart(2, "0")}</p>
-            <h3>Order list</h3></div></div>
-          {activeOrders.map((o, i) => {
-            const prog = o.items.length ? Math.round(o.items.reduce((a, it) => a + (it.progress || 0), 0) / o.items.length) : 0;
+            <h3>{company ? "Machine list" : "Order list"}</h3></div></div>
+          <div style={{ padding: "0 20px 12px" }}>
+            <select className="input" value={company} data-testid="production-company-select"
+              onChange={e => { setCompany(e.target.value); const o = activeOrders.find(x => (x.client_name || "—") === e.target.value); if (o) { setSelId(o.id); setItemIdx(0); } }}
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--line, #ddd)", borderRadius: 8, font: "inherit" }}>
+              <option value="">All companies ({activeOrders.length} orders)</option>
+              {companies.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {machineRows.map(({ o, it, idx }, i) => {
+            const prog = it.progress || 0;
             return (
-              <button className={`production-row ${selId === o.id ? "selected" : ""}`} key={o.id}
-                onClick={() => setSelId(o.id)} data-testid={`production-order-${i}`}>
+              <button className={`production-row ${selId === o.id && itemIdx === idx ? "selected" : ""}`} key={o.id + "-" + idx}
+                onClick={() => { setSelId(o.id); setItemIdx(idx); }} data-testid={`production-order-${i}`}>
                 <div className="machine-thumb"><Factory size={18} /></div>
-                <div className="production-info"><strong>{o.items[0]?.name}
-                  {o.revised_at && <span className="attention-chip revised" data-testid={`revised-chip-${i}`} title={`Revised ${fmtDate(o.revised_at)}`}>Revised</span>}
+                <div className="production-info"><strong>{it.name}
+                  {o.revised_at && <span className="attention-chip revised" title={`Revised ${fmtDate(o.revised_at)}`}>Revised</span>}
                 </strong>
-                  <span>{o.number} · {o.client_name}</span></div>
+                  <span>{o.number} · {o.client_name} · Item {idx + 1}</span></div>
                 <div className="production-percent"><strong>{prog}%</strong>
-                  <span>{o.items[0]?.stage}</span></div>
+                  <span>{it.stage || "In Planning"}</span></div>
                 <div className="progress-track wide"><i style={{ width: `${prog}%` }} /></div>
               </button>
             );
