@@ -1344,14 +1344,14 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId, dispatc
             <div data-testid="production-dispatched-list">
               <div className="panel-head" style={{ marginTop: 8 }}><div><p className="eyebrow">DISPATCHED · {dispatchedRows.length.toString().padStart(2, "0")}</p>
                 <h3>Dispatched list</h3></div></div>
-              {dispatchedRows.map(({ o, it, idx }) => (
-                <div className="production-row" key={"disp-" + o.id + "-" + idx} style={{ cursor: "default", opacity: 0.75 }}
+              {dispatchedRows.map(({ o, it, idx, d }) => (
+                <div className="production-row" key={"disp-" + d.id} style={{ cursor: "default", opacity: 0.75 }}
                   data-testid={`production-dispatched-${o.number}-${idx}`}>
                   <div className="machine-thumb"><Check size={18} /></div>
                   <div className="production-info"><strong>{it.name}</strong>
-                    <span>{o.number} · {o.client_name} · Item {idx + 1}</span></div>
+                    <span>{d.number} · {o.number} · {o.client_name} · Item {idx + 1}{d.vehicle_number ? ` · ${d.vehicle_number}` : ""}</span></div>
                   <div className="production-percent"><strong>100%</strong>
-                    <span>{it.stage || o.status}</span></div>
+                    <span>Dispatched</span></div>
                 </div>
               ))}
             </div>
