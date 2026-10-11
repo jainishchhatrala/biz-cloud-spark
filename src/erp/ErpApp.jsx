@@ -1434,19 +1434,43 @@ function ProductionPage({ user, orders, reload, setPage, initialOrderId }) {
 /* ========================= Dispatch ========================= */
 function DispatchPage({ user, orders, dispatches, reload }) {
   const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
+  const emptyForm = { order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" };
+  const [form, setForm] = useState(emptyForm);
+  const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
   const readyOrders = orders.filter(o => (o.items || []).some(i => i.stage === "Ready for Dispatch"));
-  const create = async () => {
+   const create = async () => {
     if (!form.order_id || !form.vehicle_number) { toast.error("Order & vehicle number required"); return; }
     setBusy(true);
     try {
       await api.createDispatch({ ...form, dispatch_at: new Date().toISOString() });
       toast.success("Dispatch created");
       setShow(false);
-      setForm({ order_id: "", item_index: 0, vehicle_number: "", transporter: "", driver_name: "", driver_phone: "", bilty_number: "", bill_number: "", notes: "" });
+      setForm(emptyForm);
       await reload();
     } catch { toast.error("Create failed"); } finally { setBusy(false); }
+   };
+  const openEdit = (d) => {
+    setEditing(d);
+    setForm({ order_id: d.order_id, item_index: d.item_index, vehicle_number: d.vehicle_number || "", transporter: d.transporter || "", driver_name: d.driver_name || "", driver_phone: d.driver_phone || "", bilty_number: d.bilty_number || "", bill_number: d.bill_number || "", notes: d.notes || "" });
+  };
+  const saveEdit = async () => {
+    if (!form.vehicle_number) { toast.error("Vehicle number required"); return; }
+    setBusy(true);
+    try {
+      await api.updateDispatch(editing.id, form);
+      toast.success("Dispatch updated");
+      setEditing(null);
+      await reload();
+    } catch { toast.error("Update failed"); } finally { setBusy(false); }
+  };
+  const removeDispatch = async (d) => {
+    if (!window.confirm(`Delete dispatch ${d.number}? Item will go back to Ready for Dispatch.`)) return;
+    try {
+      await api.deleteDispatch(d.id);
+      toast.success("Dispatch deleted");
+      await reload();
+    } catch { toast.error("Delete failed"); }
   };
   return (
     <div className="page-content" data-testid="page-dispatch">
@@ -1464,10 +1488,10 @@ function DispatchPage({ user, orders, dispatches, reload }) {
       <section className="panel table-panel">
         <div className="table-scroll">
           <table>
-            <thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bill / Bilty</th></tr></thead>
+<thead><tr><th>Dispatch</th><th>Order</th><th>Client</th><th>Machine</th><th>Date</th><th>Vehicle / transporter</th><th>Driver</th><th>Bill / Bilty</th><th></th></tr></thead>
             <tbody>
-              {dispatches.length === 0 && <tr><td colSpan="8"><Empty msg="No dispatches yet" /></td></tr>}
-              {dispatches.map((d, i) => (
+              {dispatches.length === 0 && <tr><td colSpan="9"><Empty msg="No dispatches yet" /></td></tr>}
+               {dispatches.map((d, i) => (
                 <tr key={d.id} data-testid={`dispatch-row-${i}`}>
                   <td><strong className="mono">{d.number}</strong></td>
                   <td>{d.order_number || "—"}</td>
@@ -1477,7 +1501,11 @@ function DispatchPage({ user, orders, dispatches, reload }) {
                   <td>{d.vehicle_number}<br /><span className="table-sub">{d.transporter}</span></td>
                   <td>{d.driver_name}<br /><span className="table-sub">{d.driver_phone}</span></td>
                   <td>{d.bill_number || "—"}<br /><span className="table-sub">{d.bilty_number ? `Bilty: ${d.bilty_number}` : ""}</span></td>
-                </tr>
+                  <td className="row-actions">
+                    <button className="icon-btn" title="Edit" onClick={() => openEdit(d)} data-testid={`dispatch-edit-${i}`}><Pencil size={15} /></button>
+                    <button className="icon-btn danger" title="Delete" onClick={() => removeDispatch(d)} data-testid={`dispatch-delete-${i}`}><Trash2 size={15} /></button>
+                  </td>
+                 </tr>
               ))}
             </tbody>
           </table>
@@ -1530,6 +1558,39 @@ function DispatchPage({ user, orders, dispatches, reload }) {
               data-testid="dispatch-notes" /></div>
           <button className="primary-btn full-btn" onClick={create} disabled={busy} data-testid="save-dispatch-button">
             <Check size={17} /> {busy ? "Saving..." : "Create dispatch"}</button>
+        </div>
+      </Modal>
+      <Modal show={!!editing} onClose={() => setEditing(null)} title={`Edit dispatch · ${editing?.number || ""}`} wide>
+        <div className="form-grid">
+          <div className="form-row-2">
+            <div><label className="field-label">Vehicle number *</label>
+              <input value={form.vehicle_number} onChange={e => setForm({ ...form, vehicle_number: e.target.value })}
+                placeholder="GJ-01-AB-1234" data-testid="edit-dispatch-vehicle" /></div>
+            <div><label className="field-label">Transporter</label>
+              <input value={form.transporter} onChange={e => setForm({ ...form, transporter: e.target.value })}
+                data-testid="edit-dispatch-transporter" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Driver name</label>
+              <input value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
+                data-testid="edit-dispatch-driver-name" /></div>
+            <div><label className="field-label">Driver phone</label>
+              <input value={form.driver_phone} onChange={e => setForm({ ...form, driver_phone: e.target.value })}
+                data-testid="edit-dispatch-driver-phone" /></div>
+          </div>
+          <div className="form-row-2">
+            <div><label className="field-label">Bill number</label>
+              <input value={form.bill_number} onChange={e => setForm({ ...form, bill_number: e.target.value })}
+                placeholder="Invoice / bill no" data-testid="edit-dispatch-bill" /></div>
+            <div><label className="field-label">Bilty / LR number</label>
+              <input value={form.bilty_number} onChange={e => setForm({ ...form, bilty_number: e.target.value })}
+                placeholder="If bilty available" data-testid="edit-dispatch-bilty" /></div>
+          </div>
+          <div><label className="field-label">Notes</label>
+            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+              data-testid="edit-dispatch-notes" /></div>
+          <button className="primary-btn full-btn" onClick={saveEdit} disabled={busy} data-testid="update-dispatch-button">
+            <Check size={17} /> {busy ? "Saving..." : "Save changes"}</button>
         </div>
       </Modal>
     </div>

@@ -321,6 +321,19 @@ export const api = {
     }
     return d;
   },
+  updateDispatch: (id, b) => update("dispatches", id, pick(b, ["dispatch_at", "vehicle_number", "transporter", "driver_name", "driver_phone", "bilty_number", "bill_number", "notes", "status"])),
+  deleteDispatch: async (id) => {
+    const d = await one("dispatches", id, "Dispatch");
+    await del("dispatches", id);
+    const o = await one("orders", d.order_id, "Order");
+    if (o && d.item_index < o.items.length && o.items[d.item_index].stage === "Dispatched") {
+      o.items[d.item_index].stage = "Ready for Dispatch";
+      o.items[d.item_index].progress = 90;
+      const patch = { items: o.items };
+      if (o.status === "Dispatched") patch.status = "In Production";
+      await update("orders", o.id, patch);
+    }
+  },
 
   // payments
   listPayments: () => list("payments"),
