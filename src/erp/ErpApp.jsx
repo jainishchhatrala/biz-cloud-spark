@@ -1823,16 +1823,24 @@ function InventoryPage({ user, items, txns, reload, initialLowOnly = false }) {
         </button>
       </div>
       {tab === "items" && (() => {
-        const shown = lowOnly ? items.filter(i => i.current_stock < i.min_level) : items;
+        const base = lowOnly ? items.filter(i => i.current_stock < i.min_level) : items;
+        const q = itemQuery.trim().toLowerCase();
+        const shown = q ? base.filter(i => (i.name + " " + i.sku + " " + (i.category || "") + " " + (i.location || "")).toLowerCase().includes(q)) : base;
         return (
         <section className="panel table-panel">
-          {lowOnly && (
-            <div className="table-toolbar" data-testid="inv-lowstock-banner">
-              <button className={`filter-btn attention-filter on`} style={{ background: "#ffebeb", color: "#d33a36", borderColor: "#f6c0bd" }}
-                onClick={() => setLowOnly(false)} data-testid="inv-lowstock-clear">
-                Low stock only ({shown.length}) ✕</button>
-            </div>
-          )}
+          <div className="table-toolbar">
+            <div className="search-wrap"><Search size={17} />
+              <input placeholder="Search inventory by name, SKU, category or location..."
+                value={itemQuery} onChange={e => setItemQuery(e.target.value)}
+                data-testid="inv-item-search" /></div>
+            {lowOnly && (
+              <div className="toolbar-actions">
+                <button className={`filter-btn attention-filter on`} style={{ background: "#ffebeb", color: "#d33a36", borderColor: "#f6c0bd" }}
+                  onClick={() => setLowOnly(false)} data-testid="inv-lowstock-clear">
+                  Low stock only ({shown.length}) ✕</button>
+              </div>
+            )}
+          </div>
           <div className="table-scroll">
           <table>
             <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Location</th><th>Stock</th><th>Scrap</th><th>Min level</th><th>Status</th><th></th></tr></thead>
