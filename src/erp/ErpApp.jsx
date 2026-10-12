@@ -2972,6 +2972,19 @@ function ProductsPage({ user, products, reload }) {
 }
 
 /* ========================= Company Settings ========================= */
+/* ========================= Data backup (CSV) ========================= */
+const csvCell = (v) => {
+  const s = v == null ? "" : String(v).replaceAll("\r", "");
+  return /[",\n;]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+};
+const downloadCsv = (name, headers, rows) => {
+  const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(csvCell).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = `${name}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 function SettingsPage({ user, company, reload }) {
   const [f, setF] = useState(company);
   const [closing, setClosing] = useState(() => splitCompanyClosing(company.terms_html || ""));
@@ -2988,6 +3001,29 @@ function SettingsPage({ user, company, reload }) {
     setBusy(true);
     try { await api.updateCompany({ ...f, terms_html: combineCompanyClosing(closing.termsHtml, closing.bankDetails) }); toast.success("Company settings saved"); await reload(); }
     catch { toast.error("Save failed"); } finally { setBusy(false); }
+  };
+  const isAdmin = user?.role === "Admin";
+  const [backupBusy, setBackupBusy] = useState("");
+  const backupClients = async () => {
+    if (!isAdmin || backupBusy) return;
+    setBackupBusy("clients");
+    try {
+      const [rows, us] = await Promise.all([api.listClients(), api.listUsers().catch(() => [])]);
+      const dealerName = (id) => us.find(u => u.id === id)?.name || "";
+      downloadCsv("clients_backup", ["Company", "Contact person", "Phone", "Email", "GSTIN", "City", "State", "Source", "Status", "Rating", "Dealer", "Notes", "Created at"],
+        rows.map(c => [c.company, c.person, c.phone, c.email, c.gstin, c.city, c.state, c.source, c.status, c.rating ?? "", dealerName(c.dealer_id), c.notes, c.created_at]));
+      toast.success(`${rows.length} clients exported to CSV`);
+    } catch { toast.error("Client backup failed"); } finally { setBackupBusy(""); }
+  };
+  const backupVendors = async () => {
+    if (!isAdmin || backupBusy) return;
+    setBackupBusy("vendors");
+    try {
+      const rows = (await api.listVendors()).filter(v => v.registered);
+      downloadCsv("vendors_backup", ["Name", "Type", "Contact person", "Phone", "WhatsApp", "Email", "City", "Address", "Services", "Active", "Notes", "Created at"],
+        rows.map(v => [v.name, v.vendor_type, v.contact_person, v.phone, v.whatsapp, v.email, v.city, v.address, v.services, v.active === false ? "No" : "Yes", v.notes, v.created_at]));
+      toast.success(`${rows.length} vendors exported to CSV`);
+    } catch { toast.error("Vendor backup failed"); } finally { setBackupBusy(""); }
   };
   return (
     <div className="page-content" data-testid="page-settings">
