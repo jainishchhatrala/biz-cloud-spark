@@ -14,7 +14,7 @@ import { openQuotationPrint } from "./print-quotation";
 import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
 import ProcessFlow from "./ProcessFlow";
 import TasksPage, { isLate as taskLate } from "./TasksPage";
-import { INDIAN_STATES, INDIAN_CITIES, COUNTRIES } from "./geoData";
+import { INDIAN_STATES, INDIAN_CITIES, COUNTRIES, stateForCity } from "./geoData";
 
 // Shared datalists for city / state / country auto-suggest (rendered once).
 const GeoDatalists = () => (
@@ -486,6 +486,12 @@ const BLANK_CLIENT = {
 function ClientForm({ initial, dealers, onSave, onClose }) {
   const [f, setF] = useState({ ...BLANK_CLIENT, ...(initial || {}) });
   const set = (k, v) => setF(s => ({ ...s, [k]: v }));
+  // City change auto-fills state, unless the user already picked a different state manually.
+  const setCity = (v) => setF(s => {
+    const auto = stateForCity(v);
+    const manualState = s.state && s.state !== stateForCity(s.city);
+    return { ...s, city: v, state: manualState ? s.state : (auto || s.state) };
+  });
   const [busy, setBusy] = useState(false);
   const save = async () => {
     if (!f.company || !f.person || !f.phone) { toast.error("Company, person & phone required"); return; }
@@ -508,7 +514,7 @@ function ClientForm({ initial, dealers, onSave, onClose }) {
       </div>
       <div className="form-row-2">
         <div><label className="field-label">City</label><div className="input-wrap"><Building2 size={17} />
-          <input value={f.city} onChange={e => set("city", e.target.value)} list="geo-cities" data-testid="client-form-city" /></div></div>
+          <input value={f.city} onChange={e => setCity(e.target.value)} list="geo-cities" data-testid="client-form-city" /></div></div>
         <div><label className="field-label">State</label><div className="input-wrap"><Building2 size={17} />
           <input value={f.state} onChange={e => set("state", e.target.value)} list="geo-states" data-testid="client-form-state" /></div></div>
       </div>
