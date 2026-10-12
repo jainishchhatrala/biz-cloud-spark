@@ -14,6 +14,16 @@ import { openQuotationPrint } from "./print-quotation";
 import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
 import ProcessFlow from "./ProcessFlow";
 import TasksPage, { isLate as taskLate } from "./TasksPage";
+import { INDIAN_STATES, INDIAN_CITIES, COUNTRIES } from "./geoData";
+
+// Shared datalists for city / state / country auto-suggest (rendered once).
+const GeoDatalists = () => (
+  <>
+    <datalist id="geo-cities">{INDIAN_CITIES.map(c => <option key={c} value={c} />)}</datalist>
+    <datalist id="geo-states">{INDIAN_STATES.map(s => <option key={s} value={s} />)}</datalist>
+    <datalist id="geo-countries">{COUNTRIES.map(c => <option key={c} value={c} />)}</datalist>
+  </>
+);
 
 /* ========================= Config ========================= */
 const BRAND = { name: "Aalidhra", suffix: " Cashew", tagline: "CASHEW EXPORT ERP" };
@@ -498,9 +508,9 @@ function ClientForm({ initial, dealers, onSave, onClose }) {
       </div>
       <div className="form-row-2">
         <div><label className="field-label">City</label><div className="input-wrap"><Building2 size={17} />
-          <input value={f.city} onChange={e => set("city", e.target.value)} data-testid="client-form-city" /></div></div>
+          <input value={f.city} onChange={e => set("city", e.target.value)} list="geo-cities" data-testid="client-form-city" /></div></div>
         <div><label className="field-label">State</label><div className="input-wrap"><Building2 size={17} />
-          <input value={f.state} onChange={e => set("state", e.target.value)} data-testid="client-form-state" /></div></div>
+          <input value={f.state} onChange={e => set("state", e.target.value)} list="geo-states" data-testid="client-form-state" /></div></div>
       </div>
       <div><label className="field-label">GST number (GSTIN)</label><div className="input-wrap"><FileText size={17} />
         <input value={f.gstin || ""} onChange={e => set("gstin", e.target.value)} placeholder="e.g. 24ABCDE1234F1Z5" data-testid="client-form-gstin" /></div></div>
@@ -2806,7 +2816,7 @@ function VendorsPage({ user, company }) {
           </div>
           <div className="form-row-2">
             <div><label className="field-label">Email</label><input value={form.email || ""} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
-            <div><label className="field-label">City</label><input value={form.city || ""} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
+            <div><label className="field-label">City</label><input value={form.city || ""} onChange={e => setForm({ ...form, city: e.target.value })} list="geo-cities" /></div>
           </div>
           <label className="field-label">Services / processes (select all that apply)</label>
           {(() => {
@@ -3225,6 +3235,7 @@ export default function App() {
         </div>
         {render()}
       </main>
+      <GeoDatalists />
       <Toaster position="top-right" richColors />
     </div>
   );
