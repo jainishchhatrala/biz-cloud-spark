@@ -486,12 +486,23 @@ const BLANK_CLIENT = {
 function ClientForm({ initial, dealers, onSave, onClose }) {
   const [f, setF] = useState({ ...BLANK_CLIENT, ...(initial || {}) });
   const set = (k, v) => setF(s => ({ ...s, [k]: v }));
+  // Preload the full India place→state map while the form is open.
+  useEffect(() => { loadPlaceStates(); }, []);
   // City change auto-fills state, unless the user already picked a different state manually.
-  const setCity = (v) => setF(s => {
-    const auto = stateForCity(v);
-    const manualState = s.state && s.state !== stateForCity(s.city);
-    return { ...s, city: v, state: manualState ? s.state : (auto || s.state) };
-  });
+  const setCity = (v) => {
+    setF(s => {
+      const auto = stateForCity(v);
+      const manualState = s.state && s.state !== stateForCity(s.city);
+      return { ...s, city: v, state: manualState ? s.state : (auto || s.state) };
+    });
+    // Not in the quick list — check the full India map (covers villages too).
+    if (!stateForCity(v) && v.trim().length >= 3) {
+      stateForCityAsync(v).then(st => {
+        if (!st) return;
+        setF(s => (s.city === v && !s.state) ? { ...s, state: st } : s);
+      });
+    }
+  };
   const [busy, setBusy] = useState(false);
   const save = async () => {
     if (!f.company || !f.person || !f.phone) { toast.error("Company, person & phone required"); return; }
