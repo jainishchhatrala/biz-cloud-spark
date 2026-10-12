@@ -73,6 +73,27 @@ export function stateForCity(city) {
   return key ? CITY_STATE[key] : "";
 }
 
+// Full India place → state map (500k+ cities & villages, GeoNames), stored as a
+// lazy-loaded asset so the app bundle stays small. Loaded once, then cached.
+import placesAsset from "./india-places.asset.json";
+let placesPromise = null;
+export function loadPlaceStates() {
+  if (!placesPromise) {
+    placesPromise = fetch(placesAsset.url)
+      .then(r => (r.ok ? r.json() : {}))
+      .catch(() => ({}));
+  }
+  return placesPromise;
+}
+
+// Async lookup: instant local map first, then the full India map.
+export async function stateForCityAsync(city) {
+  const local = stateForCity(city);
+  if (local) return local;
+  const map = await loadPlaceStates();
+  return map[String(city || "").trim().toLowerCase()] || "";
+}
+
 export const COUNTRIES = [
   "India", "United States", "United Kingdom", "United Arab Emirates", "Saudi Arabia",
   "Qatar", "Oman", "Kuwait", "Bahrain", "Singapore", "Malaysia", "Australia",

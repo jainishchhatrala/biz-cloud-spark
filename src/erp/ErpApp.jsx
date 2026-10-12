@@ -14,7 +14,7 @@ import { openQuotationPrint } from "./print-quotation";
 import { splitCompanyClosing, combineCompanyClosing } from "./quotation-document";
 import ProcessFlow from "./ProcessFlow";
 import TasksPage, { isLate as taskLate } from "./TasksPage";
-import { INDIAN_STATES, INDIAN_CITIES, COUNTRIES, stateForCity } from "./geoData";
+import { INDIAN_STATES, INDIAN_CITIES, COUNTRIES, stateForCity, stateForCityAsync, loadPlaceStates } from "./geoData";
 
 // Shared datalists for city / state / country auto-suggest (rendered once).
 const GeoDatalists = () => (
