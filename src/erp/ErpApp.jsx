@@ -3235,6 +3235,7 @@ export default function App() {
         </div>
         {render()}
       </main>
+      <GeoDatalists />
       <Toaster position="top-right" richColors />
     </div>
   );
