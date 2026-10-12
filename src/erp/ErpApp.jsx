@@ -2972,6 +2972,19 @@ function ProductsPage({ user, products, reload }) {
 }
 
 /* ========================= Company Settings ========================= */
+/* ========================= Data backup (CSV) ========================= */
+const csvCell = (v) => {
+  const s = v == null ? "" : String(v).replaceAll("\r", "");
+  return /[",\n;]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+};
+const downloadCsv = (name, headers, rows) => {
+  const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(csvCell).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = `${name}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 function SettingsPage({ user, company, reload }) {
   const [f, setF] = useState(company);
   const [closing, setClosing] = useState(() => splitCompanyClosing(company.terms_html || ""));
