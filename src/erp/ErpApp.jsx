@@ -3079,6 +3079,18 @@ function SettingsPage({ user, company, reload }) {
             onChange={e => setClosing({ ...closing, bankDetails: e.target.value })}
             rows={6} data-testid="co-bank-details" />
         </section>
+        {isAdmin && (
+          <section className="panel" data-testid="data-backup-panel">
+            <div className="panel-head"><div><p className="eyebrow">SECURITY</p><h3>Data backup</h3></div>
+              <span className="muted-cell">Admin only · CSV (opens in Excel)</span></div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="ghost-btn" onClick={backupClients} disabled={!!backupBusy} data-testid="backup-clients">
+                <Download size={16} /> {backupBusy === "clients" ? "Preparing..." : "Download clients CSV"}</button>
+              <button className="ghost-btn" onClick={backupVendors} disabled={!!backupBusy} data-testid="backup-vendors">
+                <Download size={16} /> {backupBusy === "vendors" ? "Preparing..." : "Download vendors CSV"}</button>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
